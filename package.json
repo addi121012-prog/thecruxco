@@ -1,0 +1,18 @@
+{
+  "name": "thecruxco",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "TheCruxCo — daily knowledge-first news digest",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^4.16.18",
+    "@astrojs/rss": "^4.0.11",
+    "@astrojs/sitemap": "^3.2.1"
+  }
+}

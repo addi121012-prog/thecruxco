@@ -1,0 +1,30 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const digests = (await getCollection('digests', d => !d.data.draft))
+  .sort((a, b) => +b.data.date - +a.data.date);
+
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+}).format(d);
+---
+<Base title="Digest archive" description="Every daily digest from TheCruxCo.">
+  <section class="container">
+    <header style="padding-top:32px;">
+      <span class="kicker">Archive</span>
+      <h1>Every day, the crux.</h1>
+      <p style="color:var(--muted);">Browse past daily digests.</p>
+    </header>
+
+    <ul class="card-list">
+      {digests.map((d) => (
+        <li>
+          <div class="meta">{fmt(d.data.date)}</div>
+          <h3><a href={`/digest/${d.slug}/`}>{d.data.title}</a></h3>
+          {d.data.editorsNote && <p>{d.data.editorsNote}</p>}
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>

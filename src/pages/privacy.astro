@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+const updated = new Intl.DateTimeFormat('en-IN', { day:'numeric', month:'long', year:'numeric' }).format(new Date());
+---
+<Base title="Privacy policy" description="How TheCruxCo handles your data.">
+  <article class="container">
+    <header style="padding-top:32px;">
+      <span class="kicker">Legal</span>
+      <h1>Privacy policy</h1>
+      <p class="dateline">Last updated: {updated}</p>
+    </header>
+    <div class="prose">
+      <p>TheCruxCo ("we", "our", "the publication") is committed to protecting the privacy of its readers. This policy explains what data we collect, why, and what your rights are.</p>
+
+      <h2>1. Information we collect</h2>
+      <p><strong>Analytics:</strong> we use privacy-first web analytics that record anonymous, aggregated visit data (page viewed, country, referrer, device type). No personally identifying information is collected by our analytics.</p>
+      <p><strong>Email subscriptions:</strong> if you subscribe to our newsletter, we store your email address with our email service provider for the sole purpose of sending you the digest. You can unsubscribe in one click at any time.</p>
+      <p><strong>Contact:</strong> if you email us, your message and email address are retained only as long as necessary to respond.</p>
+
+      <h2>2. Cookies and advertising</h2>
+      <p>When we enable display advertising (Google AdSense, Media.net or similar), third-party ad networks may set cookies on your device to measure ad performance and serve relevant ads. You can opt out of personalised advertising at <a href="https://adssettings.google.com" rel="nofollow">Google Ad Settings</a> and at the <a href="https://optout.networkadvertising.org" rel="nofollow">Network Advertising Initiative opt-out page</a>.</p>
+
+      <h2>3. Your rights under the DPDP Act, 2023 (India) and GDPR (EEA)</h2>
+      <p>You have the right to access, correct, or request deletion of any personal data we hold about you, and to withdraw consent to email communications at any time. Write to <a href="mailto:privacy@thecruxco.com">privacy@thecruxco.com</a> to exercise these rights.</p>
+
+      <h2>4. Children</h2>
+      <p>TheCruxCo is intended for readers aged 16 and above. We do not knowingly collect data from children.</p>
+
+      <h2>5. Changes</h2>
+      <p>We may update this policy as the publication evolves. Material changes will be flagged on the homepage.</p>
+
+      <h2>6. Contact</h2>
+      <p>Privacy questions: <a href="mailto:privacy@thecruxco.com">privacy@thecruxco.com</a>.</p>
+    </div>
+  </article>
+</Base>

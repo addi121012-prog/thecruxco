@@ -1,0 +1,14 @@
+---
+// AdSlot.astro — placeholder for AdSense / Media.net units.
+// Drop the network script + slot ID here once approved.
+// Keep size = "leaderboard" | "rectangle" | "inline" for layout consistency.
+export interface Props {
+  size?: 'leaderboard' | 'rectangle' | 'inline';
+  label?: string;
+}
+const { size = 'inline', label = 'Advertisement' } = Astro.props;
+const minHeight = size === 'leaderboard' ? '90px' : size === 'rectangle' ? '250px' : '90px';
+---
+<aside class="ad-slot" style={`min-height:${minHeight}`} aria-label="advertisement">
+  {label}
+</aside>

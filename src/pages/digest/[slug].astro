@@ -1,0 +1,44 @@
+---
+import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const digests = await getCollection('digests', d => !d.data.draft);
+  return digests.map((d) => ({ params: { slug: d.slug }, props: { entry: d } }));
+}
+
+const { entry } = Astro.props;
+const { data, slug } = entry;
+const formatted = new Intl.DateTimeFormat('en-IN', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+}).format(data.date);
+const desc = `The daily digest for ${formatted}. Six categories. Thirty items. Under five minutes.`;
+---
+<Base title={data.title} description={desc} ogType="article">
+  <section class="container">
+    <header class="digest-intro" style="padding-top:32px;">
+      <span class="kicker">Daily Digest · {formatted}</span>
+      <h1>{data.title}</h1>
+      {data.editorsNote && <p class="editors-note">{data.editorsNote}</p>}
+    </header>
+
+    {data.categories.map((cat, ci) => (
+      <section class="category">
+        <h2 class="category-name">{cat.name}</h2>
+        {cat.items.map((it) => (
+          <div class="item">
+            <p class="headline">{it.headline}</p>
+            <p class="summary">{it.summary}</p>
+            {it.source && <a class="src-link" href={it.source} rel="nofollow noopener" target="_blank">Source ↗</a>}
+          </div>
+        ))}
+        {(ci === 2 || ci === 4) && <AdSlot size="rectangle" />}
+      </section>
+    ))}
+
+    <p style="margin-top:48px; font-family:var(--sans); font-size:14px;">
+      <a href="/digest/">← Back to archive</a>
+    </p>
+  </section>
+</Base>

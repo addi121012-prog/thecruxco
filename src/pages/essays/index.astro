@@ -1,0 +1,30 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const essays = (await getCollection('essays', e => !e.data.draft))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
+
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric', month: 'long', year: 'numeric'
+}).format(d);
+---
+<Base title="Essays" description="Long-form essays from anonymous correspondents. Slow ideas, written by hand.">
+  <section class="container">
+    <header style="padding-top:32px;">
+      <span class="kicker">Essays</span>
+      <h1>Slow ideas, written by hand.</h1>
+      <p style="color:var(--muted);">Weekly long-reads from correspondents who write under pen names — so the argument matters more than the author.</p>
+    </header>
+
+    <ul class="card-list">
+      {essays.map((e) => (
+        <li>
+          <div class="meta">{e.data.author} · {fmt(e.data.pubDate)}</div>
+          <h3><a href={`/essays/${e.slug}/`}>{e.data.title}</a></h3>
+          <p>{e.data.excerpt}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>

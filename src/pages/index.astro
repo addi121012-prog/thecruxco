@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+import { getCollection } from 'astro:content';
+
+const digests = (await getCollection('digests', d => !d.data.draft))
+  .sort((a, b) => +b.data.date - +a.data.date);
+
+const latest = digests[0];
+const recentEssays = (await getCollection('essays', e => !e.data.draft))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
+  .slice(0, 3);
+
+const formatted = latest ? new Intl.DateTimeFormat('en-IN', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+}).format(latest.data.date) : '';
+---
+<Base
+  title="TheCruxCo"
+  description="Daily 5-minute knowledge-first news digest for ambitious Indians. Signal over noise."
+>
+  <section class="container-wide hero">
+    <span class="kicker">Today · {formatted}</span>
+    <h1>{latest ? latest.data.title : 'Get to the crux.'}</h1>
+    <p class="tag">Seven categories. Thirty-five items. Under seven minutes. Every day.</p>
+  </section>
+
+  {latest && (
+    <article class="container">
+      {latest.data.editorsNote && (
+        <p class="editors-note">{latest.data.editorsNote}</p>
+      )}
+
+      {latest.data.categories.map((cat, ci) => (
+        <section class="category">
+          <h2 class="category-name">{cat.name}</h2>
+          {cat.items.map((it) => (
+            <div class="item">
+              <p class="headline">{it.headline}</p>
+              <p class="summary">{it.summary}</p>
+              {it.source && <a class="src-link" href={it.source} rel="nofollow noopener" target="_blank">Source ↗</a>}
+            </div>
+          ))}
+          {(ci === 2 || ci === 4) && <AdSlot size="rectangle" />}
+        </section>
+      ))}
+
+      <p style="margin-top:48px; font-family:var(--sans); font-size:14px;">
+        <a href={`/digest/${latest.slug}/`}>Permalink to today's digest →</a> ·
+        <a href="/digest/">Browse the archive →</a>
+      </p>
+    </article>
+  )}
+
+  {recentEssays.length > 0 && (
+    <section class="container" style="margin-top:80px;">
+      <span class="kicker">From the essays</span>
+      <h2 style="margin-top:6px;">Slow ideas, written by hand.</h2>
+      <ul class="card-list">
+        {recentEssays.map((e) => (
+          <li>
+            <div class="meta">{e.data.author} · {new Intl.DateTimeFormat('en-IN', { day:'numeric', month:'short', year:'numeric'}).format(e.data.pubDate)}</div>
+            <h3><a href={`/essays/${e.slug}/`}>{e.data.title}</a></h3>
+            <p>{e.data.excerpt}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</Base>
