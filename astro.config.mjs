@@ -1,10 +1,8 @@
 import { defineConfig } from 'astro/config';
-import sitemap from '@astrojs/sitemap';
 
-// Change `site` to your final domain before launch (e.g. https://thecrux.co).
+// Production site URL — used for canonical links, RSS, and OG metadata.
 export default defineConfig({
   site: 'https://thecruxco.com',
-  integrations: [sitemap()],
   build: {
     inlineStylesheets: 'auto'
   },
