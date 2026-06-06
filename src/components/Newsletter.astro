@@ -2,26 +2,23 @@
 import { NEWSLETTER } from '../config/site';
 
 export interface Props {
-  /** Visual size: 'inline' for compact mid-page, 'block' for big standalone, 'minimal' for sidebar */
-  size?: 'inline' | 'block' | 'minimal';
-  /** Custom heading override */
+  size?: 'sidebar' | 'inline' | 'minimal';
   heading?: string;
-  /** Custom kicker text */
   kicker?: string;
 }
 
 const { size = 'inline', heading, kicker } = Astro.props;
 
 const defaults = {
+  sidebar: {
+    kicker: 'The Daily Crux',
+    heading: 'Get the digest in your inbox.',
+    blurb: 'Free. Seven categories. Under seven minutes. Every weekday morning.',
+  },
   inline: {
     kicker: 'The Daily Crux',
     heading: 'Get the digest in your inbox.',
     blurb: 'Seven categories. Thirty-five items. Under seven minutes. Every morning at 7:30 AM IST.',
-  },
-  block: {
-    kicker: 'Subscribe',
-    heading: 'Read smarter for five minutes a day.',
-    blurb: 'TheCruxCo lands in your inbox every weekday morning with the most consequential news in seven categories — free, no spam, unsubscribe anytime.',
   },
   minimal: {
     kicker: 'Subscribe',
@@ -41,7 +38,6 @@ const finalKicker = kicker ?? cfg.kicker;
     <h3 class="newsletter__heading">{finalHeading}</h3>
     <p class="newsletter__blurb">{cfg.blurb}</p>
 
-    {/* Beehiiv embedded form — renders inline where this script appears. */}
     <div class="newsletter__form">
       <script
         is:inline

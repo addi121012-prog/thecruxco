@@ -1,48 +1,44 @@
 ---
-// "What's Next from The Crux" — reserves visual space for future products
-// and signals momentum to readers without breaking brand restraint.
+export interface Props {
+  variant?: 'sidebar' | 'block';
+}
+
+const { variant = 'sidebar' } = Astro.props;
 
 const cards = [
   {
     name: 'The Crux Monthly',
     kicker: 'E-magazine',
-    blurb: 'A monthly long-form PDF magazine for subscribers — the deeper essays, the longer arguments, the bigger ideas. Free with your subscription. First issue October 2026.',
+    blurb: 'A monthly long-form PDF for subscribers. First issue October 2026.',
     status: 'Coming soon',
   },
   {
     name: 'The Crux Markets',
     kicker: 'Daily brief',
-    blurb: 'A separate five-minute markets digest for finance, banking and investing professionals. Same editorial discipline, applied to capital. Launching early 2027.',
+    blurb: 'A 5-min markets digest for finance professionals. Early 2027.',
     status: 'Coming soon',
   },
   {
     name: 'The Crux Store',
     kicker: 'Merchandise',
-    blurb: 'Notebooks, posters and the annual "Crux of the Year" yearbook. For readers who want a piece of the publication on their desk.',
+    blurb: 'Notebooks, posters, the annual yearbook. On the desk.',
     status: 'Coming soon',
   },
 ];
 ---
 
-<section class="whats-next" aria-labelledby="whats-next-heading">
-  <div class="container">
-    <span class="kicker">What's next from The Crux</span>
-    <h2 id="whats-next-heading">Things we're building.</h2>
-    <p class="whats-next__lede">
-      The daily digest is the first thing. There's more on the way — for readers who want it.
-    </p>
-
-    <div class="whats-next__grid">
-      {cards.map((c) => (
-        <article class="whats-next__card">
-          <div class="whats-next__card-head">
-            <span class="kicker whats-next__kicker">{c.kicker}</span>
-            <span class="whats-next__badge">{c.status}</span>
-          </div>
-          <h3 class="whats-next__name">{c.name}</h3>
-          <p class="whats-next__blurb">{c.blurb}</p>
-        </article>
-      ))}
-    </div>
+<section class={`whats-next whats-next--${variant}`} aria-labelledby="whats-next-heading">
+  <h3 id="whats-next-heading" class="whats-next__sidebar-title">What's next</h3>
+  <div class="whats-next__stack">
+    {cards.map((c) => (
+      <article class="whats-next__card">
+        <div class="whats-next__card-head">
+          <span class="kicker whats-next__kicker">{c.kicker}</span>
+          <span class="whats-next__badge">{c.status}</span>
+        </div>
+        <h4 class="whats-next__name">{c.name}</h4>
+        <p class="whats-next__blurb">{c.blurb}</p>
+      </article>
+    ))}
   </div>
 </section>
