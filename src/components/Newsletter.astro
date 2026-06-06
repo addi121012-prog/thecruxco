@@ -27,7 +27,7 @@ const defaults = {
   },
 };
 
-const cfg = defaults[size];
+const cfg = defaults[size] ?? defaults.inline;
 const finalHeading = heading ?? cfg.heading;
 const finalKicker = kicker ?? cfg.kicker;
 ---
