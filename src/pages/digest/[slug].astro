@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import AdSlot from '../../components/AdSlot.astro';
+import Newsletter from '../../components/Newsletter.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -9,11 +10,11 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const { data, slug } = entry;
+const { data } = entry;
 const formatted = new Intl.DateTimeFormat('en-IN', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 }).format(data.date);
-const desc = `The daily digest for ${formatted}. Six categories. Thirty items. Under five minutes.`;
+const desc = `The daily digest for ${formatted}. Seven categories. Thirty-five items. Under seven minutes.`;
 ---
 <Base title={data.title} description={desc} ogType="article">
   <section class="container">
@@ -41,4 +42,6 @@ const desc = `The daily digest for ${formatted}. Six categories. Thirty items. U
       <a href="/digest/">← Back to archive</a>
     </p>
   </section>
+
+  <Newsletter size="block" />
 </Base>

@@ -1,0 +1,65 @@
+---
+import { NEWSLETTER } from '../config/site';
+
+export interface Props {
+  /** Visual size: 'inline' for compact mid-page, 'block' for big standalone, 'minimal' for sidebar */
+  size?: 'inline' | 'block' | 'minimal';
+  /** Custom heading override */
+  heading?: string;
+  /** Custom kicker text */
+  kicker?: string;
+}
+
+const { size = 'inline', heading, kicker } = Astro.props;
+
+const defaults = {
+  inline: {
+    kicker: 'The Daily Crux',
+    heading: 'Get the digest in your inbox.',
+    blurb: 'Seven categories. Thirty-five items. Under seven minutes. Every morning at 7:30 AM IST.',
+  },
+  block: {
+    kicker: 'Subscribe',
+    heading: 'Read smarter for five minutes a day.',
+    blurb: 'TheCruxCo lands in your inbox every weekday morning with the most consequential news in seven categories — free, no spam, unsubscribe anytime.',
+  },
+  minimal: {
+    kicker: 'Subscribe',
+    heading: 'Daily digest by email.',
+    blurb: 'Free. Every morning. No spam.',
+  },
+};
+
+const cfg = defaults[size];
+const finalHeading = heading ?? cfg.heading;
+const finalKicker = kicker ?? cfg.kicker;
+---
+
+<section class={`newsletter newsletter--${size}`} aria-label="Newsletter signup">
+  <div class="newsletter__inner">
+    <span class="kicker">{finalKicker}</span>
+    <h3 class="newsletter__heading">{finalHeading}</h3>
+    <p class="newsletter__blurb">{cfg.blurb}</p>
+
+    {/* Beehiiv embedded form — renders inline where this script appears. */}
+    <div class="newsletter__form">
+      <script
+        is:inline
+        async
+        src="https://subscribe-forms.beehiiv.com/v3/loader.js"
+        data-beehiiv-form={NEWSLETTER.embedFormId}
+      ></script>
+      <noscript>
+        <p>
+          <a href={NEWSLETTER.hostedSubscribeUrl} rel="noopener" target="_blank">
+            Subscribe via thecruxco.beehiiv.com →
+          </a>
+        </p>
+      </noscript>
+    </div>
+
+    <p class="newsletter__fallback">
+      Form not loading? <a href={NEWSLETTER.hostedSubscribeUrl} rel="noopener" target="_blank">Subscribe directly →</a>
+    </p>
+  </div>
+</section>

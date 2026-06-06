@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Newsletter from '../components/Newsletter.astro';
+---
+<Base title="Subscribe" description="Subscribe to TheCruxCo — daily knowledge-first news digest. Free, no spam, one click to unsubscribe.">
+  <section class="container subscribe-page">
+    <span class="kicker">The Daily Crux</span>
+    <h1>Read smarter for five minutes a day.</h1>
+    <p class="tag">
+      Seven categories. Thirty-five items. Under seven minutes. Every weekday morning at 7:30 AM IST. Free, no spam, one click to unsubscribe.
+    </p>
+  </section>
+
+  <Newsletter size="block" heading="Subscribe to the daily." />
+
+  <section class="container" style="margin-top:32px; max-width:580px;">
+    <h2 style="font-size:22px;">What you actually get</h2>
+    <ul style="padding-left:20px; color:var(--ink);">
+      <li><strong>Seven categories, every day:</strong> Geopolitics · Economy · AI &amp; Tech · Health &amp; Biotech · Science &amp; Space · Society · Future ideas.</li>
+      <li><strong>Five items per category:</strong> 60-word summary, primary source, no filler.</li>
+      <li><strong>Friday essay:</strong> a long-form piece by an anonymous correspondent.</li>
+      <li><strong>No celebrity, no outrage, no clickbait.</strong> Ever.</li>
+      <li><strong>One click to unsubscribe.</strong> No tricks, no win-back campaigns.</li>
+    </ul>
+  </section>
+</Base>

@@ -1,6 +1,7 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { SITE } from '../config/site';
 import '../styles/global.css';
 
 export interface Props {
@@ -11,11 +12,11 @@ export interface Props {
 
 const {
   title,
-  description = 'TheCruxCo — daily 5-minute knowledge-first news digest. Signal over noise.',
+  description = SITE.description,
   ogType = 'website',
 } = Astro.props;
 
-const fullTitle = title === 'TheCruxCo' ? 'TheCruxCo — Get to the crux.' : `${title} · TheCruxCo`;
+const fullTitle = title === SITE.name ? `${SITE.brand} — ${SITE.tagline}` : `${title} · ${SITE.brand}`;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 ---
 <!doctype html>
@@ -28,22 +29,30 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="alternate" type="application/rss+xml" title="TheCruxCo" href="/rss.xml" />
+  <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
 
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
   <meta property="og:type" content={ogType} />
   <meta property="og:url" content={canonical} />
-  <meta property="og:site_name" content="TheCruxCo" />
+  <meta property="og:site_name" content={SITE.name} />
   <meta name="twitter:card" content="summary_large_image" />
+
+  {/* FOUC-prevention: set theme attribute before paint based on localStorage. */}
+  <script is:inline>
+    (function () {
+      try {
+        var stored = localStorage.getItem('crux-theme');
+        if (stored === 'dark' || stored === 'light') {
+          document.documentElement.setAttribute('data-theme', stored);
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- Cloudflare Web Analytics: paste token before launch
   <script defer src='https://static.cloudflareinsights.com/beacon.min.js'
     data-cf-beacon='{"token": "YOUR_TOKEN_HERE"}'></script>
-  -->
-
-  <!-- AdSense site verification (paste publisher ID before applying)
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
   -->
 </head>
 <body>

@@ -1,7 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 import AdSlot from '../components/AdSlot.astro';
+import Newsletter from '../components/Newsletter.astro';
+import WhatsNext from '../components/WhatsNext.astro';
 import { getCollection } from 'astro:content';
+import { SITE } from '../config/site';
 
 const digests = (await getCollection('digests', d => !d.data.draft))
   .sort((a, b) => +b.data.date - +a.data.date);
@@ -16,8 +19,8 @@ const formatted = latest ? new Intl.DateTimeFormat('en-IN', {
 }).format(latest.data.date) : '';
 ---
 <Base
-  title="TheCruxCo"
-  description="Daily 5-minute knowledge-first news digest for ambitious Indians. Signal over noise."
+  title={SITE.name}
+  description={SITE.description}
 >
   <section class="container-wide hero">
     <span class="kicker">Today · {formatted}</span>
@@ -51,6 +54,10 @@ const formatted = latest ? new Intl.DateTimeFormat('en-IN', {
       </p>
     </article>
   )}
+
+  <Newsletter size="block" />
+
+  <WhatsNext />
 
   {recentEssays.length > 0 && (
     <section class="container" style="margin-top:80px;">

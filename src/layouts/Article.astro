@@ -1,6 +1,7 @@
 ---
 import Base from './Base.astro';
 import AdSlot from '../components/AdSlot.astro';
+import Newsletter from '../components/Newsletter.astro';
 
 export interface Props {
   title: string;
@@ -30,4 +31,6 @@ const formatted = new Intl.DateTimeFormat('en-IN', {
     </div>
     <AdSlot size="rectangle" />
   </article>
+
+  <Newsletter size="block" />
 </Base>
