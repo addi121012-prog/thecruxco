@@ -1,6 +1,7 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import StructuredData from '../components/StructuredData.astro';
 import { SITE } from '../config/site';
 import '../styles/global.css';
 
@@ -8,16 +9,34 @@ export interface Props {
   title: string;
   description?: string;
   ogType?: string;
+  pubDate?: Date;
+  author?: string;
+  keywords?: string[];
 }
 
 const {
   title,
   description = SITE.description,
   ogType = 'website',
+  pubDate,
+  author,
+  keywords = [
+    'India news',
+    'daily news digest',
+    'knowledge news',
+    'Indian news',
+    'business news India',
+    'geopolitics news',
+    'AI news',
+    'science news India',
+    'Inshorts alternative',
+    'intelligent news',
+  ],
 } = Astro.props;
 
 const fullTitle = title === SITE.name ? `${SITE.brand} — ${SITE.tagline}` : `${title} · ${SITE.brand}`;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const isArticle = ogType === 'article';
 ---
 <!doctype html>
 <html lang="en">
@@ -27,16 +46,36 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
   <meta name="generator" content={Astro.generator} />
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
+  <meta name="keywords" content={keywords.join(', ')} />
+  <meta name="author" content={author ?? 'TheCruxCo Editorial'} />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
   <link rel="canonical" href={canonical} />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
 
+  {/* Open Graph */}
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
   <meta property="og:type" content={ogType} />
   <meta property="og:url" content={canonical} />
   <meta property="og:site_name" content={SITE.name} />
+  <meta property="og:locale" content="en_IN" />
+  {isArticle && pubDate && <meta property="article:published_time" content={pubDate.toISOString()} />}
+
+  {/* Twitter */}
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={fullTitle} />
+  <meta name="twitter:description" content={description} />
+
+  {/* JSON-LD structured data */}
+  <StructuredData
+    type={isArticle ? 'article' : 'website'}
+    title={title}
+    description={description}
+    pubDate={pubDate}
+    author={author}
+    url={canonical}
+  />
 
   {/* FOUC-prevention: set theme attribute before paint based on localStorage. */}
   <script is:inline>

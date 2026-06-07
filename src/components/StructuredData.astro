@@ -1,0 +1,75 @@
+---
+// JSON-LD structured data for search engines.
+// Use type="article" for digest/essay pages, "website" otherwise.
+
+import { SITE } from '../config/site';
+
+export interface Props {
+  type?: 'website' | 'article';
+  title?: string;
+  description?: string;
+  pubDate?: Date;
+  author?: string;
+  url?: string;
+}
+
+const {
+  type = 'website',
+  title,
+  description,
+  pubDate,
+  author,
+  url,
+} = Astro.props;
+
+const canonical = url ?? new URL(Astro.url.pathname, Astro.site).toString();
+
+const publisher = {
+  '@type': 'Organization',
+  name: SITE.name,
+  url: SITE.url,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE.url}/favicon.svg`,
+  },
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  alternateName: SITE.brand,
+  url: SITE.url,
+  description: SITE.description,
+  publisher,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${SITE.url}/?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const articleSchema = type === 'article' && pubDate ? {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: title,
+  description,
+  datePublished: pubDate.toISOString(),
+  dateModified: pubDate.toISOString(),
+  author: {
+    '@type': 'Person',
+    name: author ?? 'The Editor',
+  },
+  publisher,
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonical,
+  },
+  isAccessibleForFree: true,
+} : null;
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+{articleSchema && (
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+)}

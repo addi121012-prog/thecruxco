@@ -1,0 +1,26 @@
+---
+// Sticky table-of-contents for digest pages. Renders category jump links.
+export interface Props {
+  categories: { name: string }[];
+}
+const { categories } = Astro.props;
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+---
+
+<nav class="toc" aria-label="Digest sections">
+  <h3 class="toc__title">In this digest</h3>
+  <ol class="toc__list">
+    {categories.map((c, i) => (
+      <li class="toc__item">
+        <a href={`#cat-${slugify(c.name)}`} class="toc__link">
+          <span class="toc__num">{String(i + 1).padStart(2, '0')}</span>
+          <span class="toc__name">{c.name}</span>
+        </a>
+      </li>
+    ))}
+  </ol>
+  <p class="toc__readtime">≈ 10 min read</p>
+</nav>

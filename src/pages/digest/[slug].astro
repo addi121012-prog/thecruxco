@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro';
 import AdSlot from '../../components/AdSlot.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import WhatsNext from '../../components/WhatsNext.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -15,10 +16,18 @@ const { data } = entry;
 const formatted = new Intl.DateTimeFormat('en-IN', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 }).format(data.date);
-const desc = `The daily digest for ${formatted}. Seven categories. Thirty-five items. Under seven minutes.`;
+const desc = `The daily digest for ${formatted}. Ten categories. Fifty items. Under ten minutes.`;
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
 ---
-<Base title={data.title} description={desc} ogType="article">
+<Base title={data.title} description={desc} ogType="article" pubDate={data.date}>
   <div class="layout">
+    <aside class="layout__toc">
+      <TableOfContents categories={data.categories} />
+    </aside>
+
     <article class="layout__main">
       <header class="digest-intro" style="padding-top:32px;">
         <span class="kicker">Daily Digest · {formatted}</span>
@@ -27,8 +36,11 @@ const desc = `The daily digest for ${formatted}. Seven categories. Thirty-five i
       </header>
 
       {data.categories.map((cat, ci) => (
-        <section class="category">
-          <h2 class="category-name">{cat.name}</h2>
+        <section class="category" id={`cat-${slugify(cat.name)}`}>
+          <h2 class="category-name">
+            <span class="category-name__num">{String(ci + 1).padStart(2, '0')}</span>
+            <span>{cat.name}</span>
+          </h2>
           {cat.items.map((it) => (
             <div class="item">
               <p class="headline">{it.headline}</p>
@@ -36,7 +48,7 @@ const desc = `The daily digest for ${formatted}. Seven categories. Thirty-five i
               {it.source && <a class="src-link" href={it.source} rel="nofollow noopener" target="_blank">Source ↗</a>}
             </div>
           ))}
-          {ci === 3 && <AdSlot size="rectangle" />}
+          {ci === 4 && <AdSlot size="rectangle" />}
         </section>
       ))}
 
