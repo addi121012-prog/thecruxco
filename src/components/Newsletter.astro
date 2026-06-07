@@ -13,12 +13,12 @@ const defaults = {
   sidebar: {
     kicker: 'The Daily Crux',
     heading: 'Get the digest in your inbox.',
-    blurb: 'Free. Seven categories. Under seven minutes. Every weekday morning.',
+    blurb: 'Ten categories. Fifty items. Under ten minutes. Every weekday morning. Free, no spam.',
   },
   inline: {
     kicker: 'The Daily Crux',
     heading: 'Get the digest in your inbox.',
-    blurb: 'Seven categories. Thirty-five items. Under seven minutes. Every morning at 7:30 AM IST.',
+    blurb: 'Ten categories. Fifty items. Under ten minutes. Every morning at 7:30 AM IST.',
   },
   minimal: {
     kicker: 'Subscribe',
@@ -30,6 +30,7 @@ const defaults = {
 const cfg = defaults[size] ?? defaults.inline;
 const finalHeading = heading ?? cfg.heading;
 const finalKicker = kicker ?? cfg.kicker;
+const isSidebar = size === 'sidebar' || size === 'minimal';
 ---
 
 <section class={`newsletter newsletter--${size}`} aria-label="Newsletter signup">
@@ -38,24 +39,50 @@ const finalKicker = kicker ?? cfg.kicker;
     <h3 class="newsletter__heading">{finalHeading}</h3>
     <p class="newsletter__blurb">{cfg.blurb}</p>
 
-    <div class="newsletter__form">
-      <script
-        is:inline
-        async
-        src="https://subscribe-forms.beehiiv.com/v3/loader.js"
-        data-beehiiv-form={NEWSLETTER.embedFormId}
-      ></script>
-      <noscript>
-        <p>
-          <a href={NEWSLETTER.hostedSubscribeUrl} rel="noopener" target="_blank">
-            Subscribe via thecruxco.beehiiv.com →
-          </a>
+    {isSidebar ? (
+      <form
+        class="newsletter__form-custom"
+        action={NEWSLETTER.hostedSubscribeUrl}
+        method="get"
+        target="_blank"
+        rel="noopener"
+      >
+        <label class="newsletter__label" for={`crux-email-${size}`}>Email address</label>
+        <div class="newsletter__row">
+          <input
+            id={`crux-email-${size}`}
+            type="email"
+            name="email"
+            placeholder="you@example.com"
+            required
+            class="newsletter__input"
+            autocomplete="email"
+          />
+          <button type="submit" class="newsletter__submit">Subscribe</button>
+        </div>
+        <p class="newsletter__fineprint">
+          Free. One click to unsubscribe.
         </p>
-      </noscript>
-    </div>
-
-    <p class="newsletter__fallback">
-      Form not loading? <a href={NEWSLETTER.hostedSubscribeUrl} rel="noopener" target="_blank">Subscribe directly →</a>
-    </p>
+      </form>
+    ) : (
+      <div class="newsletter__form">
+        <script
+          is:inline
+          async
+          src="https://subscribe-forms.beehiiv.com/v3/loader.js"
+          data-beehiiv-form={NEWSLETTER.embedFormId}
+        ></script>
+        <noscript>
+          <p>
+            <a href={NEWSLETTER.hostedSubscribeUrl} rel="noopener" target="_blank">
+              Subscribe via thecruxco.beehiiv.com →
+            </a>
+          </p>
+        </noscript>
+        <p class="newsletter__fallback">
+          Form not loading? <a href={NEWSLETTER.hostedSubscribeUrl} rel="noopener" target="_blank">Subscribe directly →</a>
+        </p>
+      </div>
+    )}
   </div>
 </section>

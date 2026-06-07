@@ -329,11 +329,65 @@ h3 { font-size: 20px; margin: 24px 0 6px; }
 
 .newsletter--sidebar {
   background: var(--card);
-  border-radius: 6px;
-  padding: 20px 18px;
+  border-radius: 8px;
+  padding: 22px 20px;
+  border: 1px solid var(--rule);
 }
 .newsletter--sidebar .newsletter__heading { font-size: 19px; }
 .newsletter--sidebar .newsletter__blurb { font-size: 13px; }
+
+/* Custom (non-iframe) Beehiiv form — used in sidebar for cleaner brand integration */
+.newsletter__form-custom { margin: 14px 0 0; }
+.newsletter__label {
+  display: block;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.newsletter__row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.newsletter__input {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 11px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.newsletter__input:focus { border-color: var(--ink); }
+.newsletter__input::placeholder { color: var(--muted); opacity: 0.7; }
+.newsletter__submit {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.newsletter__submit:hover { opacity: 0.88; }
+.newsletter__fineprint {
+  margin: 12px 0 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
 
 .newsletter--inline { margin: 40px 0; padding: 28px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); text-align: center; }
 .newsletter--inline .newsletter__inner { text-align: center; }
