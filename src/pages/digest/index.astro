@@ -5,8 +5,9 @@ import { getCollection } from 'astro:content';
 const digests = (await getCollection('digests', d => !d.data.draft))
   .sort((a, b) => +b.data.date - +a.data.date);
 
-const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
-  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+const fmtDay = (d: Date) => new Intl.DateTimeFormat('en-IN', { weekday: 'short' }).format(d);
+const fmtDate = (d: Date) => new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric', month: 'long', year: 'numeric'
 }).format(d);
 ---
 <Base title="Digest archive" description="Every daily digest from TheCruxCo.">
@@ -14,17 +15,30 @@ const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
     <header style="padding-top:32px;">
       <span class="kicker">Archive</span>
       <h1>Every day, the crux.</h1>
-      <p style="color:var(--muted);">Browse past daily digests.</p>
+      <p style="color:var(--muted);">{digests.length} digests and counting. Pick a day, get caught up in ten minutes.</p>
     </header>
 
-    <ul class="card-list">
-      {digests.map((d) => (
-        <li>
-          <div class="meta">{fmt(d.data.date)}</div>
-          <h3><a href={`/digest/${d.slug}/`}>{d.data.title}</a></h3>
-          {d.data.editorsNote && <p>{d.data.editorsNote}</p>}
-        </li>
-      ))}
+    <ul class="archive-list">
+      {digests.map((d, i) => {
+        const itemCount = d.data.categories.reduce((n, c) => n + c.items.length, 0);
+        const lead = d.data.categories[0]?.items[0]?.headline;
+        return (
+          <li class="archive-card">
+            <a href={`/digest/${d.slug}/`} class="archive-card__link">
+              <div class="archive-card__date">
+                <span class="archive-card__day">{fmtDay(d.data.date)}</span>
+                <span class="archive-card__full">{fmtDate(d.data.date)}</span>
+                {i === 0 && <span class="archive-card__badge">Latest</span>}
+              </div>
+              <div class="archive-card__body">
+                {lead && <p class="archive-card__lead">{lead}</p>}
+                {d.data.editorsNote && <p class="archive-card__note">{d.data.editorsNote}</p>}
+                <p class="archive-card__meta">{d.data.categories.length} categories · {itemCount} items</p>
+              </div>
+            </a>
+          </li>
+        );
+      })}
     </ul>
   </section>
 </Base>

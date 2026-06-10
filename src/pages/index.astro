@@ -4,6 +4,7 @@ import AdSlot from '../components/AdSlot.astro';
 import Newsletter from '../components/Newsletter.astro';
 import WhatsNext from '../components/WhatsNext.astro';
 import TableOfContents from '../components/TableOfContents.astro';
+import DigestBody from '../components/DigestBody.astro';
 import { getCollection } from 'astro:content';
 import { SITE } from '../config/site';
 
@@ -11,6 +12,7 @@ const digests = (await getCollection('digests', d => !d.data.draft))
   .sort((a, b) => +b.data.date - +a.data.date);
 
 const latest = digests[0];
+const yesterday = digests[1];
 const recentEssays = (await getCollection('essays', e => !e.data.draft))
   .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
   .slice(0, 3);
@@ -19,15 +21,20 @@ const formatted = latest ? new Intl.DateTimeFormat('en-IN', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 }).format(latest.data.date) : '';
 
-function slugify(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
+const itemCount = latest
+  ? latest.data.categories.reduce((n, c) => n + c.items.length, 0)
+  : 0;
 ---
 <Base title={SITE.name} description={SITE.description}>
   <section class="container-wide hero">
-    <span class="kicker">Today · {formatted}</span>
+    <div class="hero__topline">
+      <span class="kicker">Today · {formatted}</span>
+      <span class="streak-chip" data-streak-chip hidden></span>
+    </div>
     <h1>{latest ? latest.data.title : 'Get to the crux.'}</h1>
-    <p class="tag">Ten categories. Fifty items. Under ten minutes. Every day.</p>
+    <p class="tag">
+      {latest ? `${latest.data.categories.length} categories · ${itemCount} items · under ten minutes.` : 'Ten categories. Fifty items. Under ten minutes. Every day.'}
+    </p>
   </section>
 
   <div class="layout">
@@ -44,27 +51,16 @@ function slugify(name: string): string {
             <p class="editors-note">{latest.data.editorsNote}</p>
           )}
 
-          {latest.data.categories.map((cat, ci) => (
-            <section class="category" id={`cat-${slugify(cat.name)}`}>
-              <h2 class="category-name">
-                <span class="category-name__num">{String(ci + 1).padStart(2, '0')}</span>
-                <span>{cat.name}</span>
-              </h2>
-              {cat.items.map((it) => (
-                <div class="item">
-                  <p class="headline">{it.headline}</p>
-                  <p class="summary">{it.summary}</p>
-                  {it.source && <a class="src-link" href={it.source} rel="nofollow noopener" target="_blank">Source ↗</a>}
-                </div>
-              ))}
-              {ci === 4 && <AdSlot size="rectangle" />}
-            </section>
-          ))}
+          <DigestBody categories={latest.data.categories} permalink={`/digest/${latest.slug}/`} />
 
-          <p style="margin-top:48px; font-family:var(--sans); font-size:14px;">
-            <a href={`/digest/${latest.slug}/`}>Permalink to today's digest →</a> ·
-            <a href="/digest/">Browse the archive →</a>
-          </p>
+          <nav class="day-pager" aria-label="Digest navigation">
+            {yesterday && (
+              <a class="day-pager__link" href={`/digest/${yesterday.slug}/`}>
+                ← Missed yesterday? Read {new Intl.DateTimeFormat('en-IN', { weekday: 'long' }).format(yesterday.data.date)}'s crux
+              </a>
+            )}
+            <a class="day-pager__link" href="/digest/">Browse the archive →</a>
+          </nav>
         </>
       )}
 

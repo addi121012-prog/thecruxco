@@ -8,7 +8,7 @@ export const SITE = {
   url: 'https://thecruxco.com',
   tagline: 'Get to the crux.',
   description:
-    'Daily knowledge-first news digest for ambitious Indians. Seven categories, thirty-five items, under seven minutes. Every day.',
+    'Daily knowledge-first news digest for ambitious Indians. Ten categories, fifty items, under ten minutes. Every day.',
   email: 'hello@thecruxco.com',
   location: 'India',
 } as const;

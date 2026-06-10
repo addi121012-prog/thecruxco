@@ -95,10 +95,60 @@ const isArticle = ogType === 'article';
   -->
 </head>
 <body>
+  <div class="read-progress" aria-hidden="true"><div class="read-progress__bar" data-progress-bar></div></div>
   <Header />
   <main>
     <slot />
   </main>
   <Footer />
+  <button class="back-to-top" data-back-to-top type="button" aria-label="Back to top" hidden>↑</button>
+
+  <script is:inline>
+    (function () {
+      var ticking = false;
+      var bar = document.querySelector('[data-progress-bar]');
+      var topBtn = document.querySelector('[data-back-to-top]');
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function () {
+          var h = document.documentElement;
+          var max = h.scrollHeight - h.clientHeight;
+          if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? h.scrollTop / max : 0) + ')';
+          if (topBtn) topBtn.hidden = h.scrollTop < 900;
+          ticking = false;
+        });
+      }
+      document.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+
+      if (topBtn) topBtn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      // TOC scroll-spy: highlight the category currently in view.
+      var links = document.querySelectorAll('.toc__link');
+      var sections = document.querySelectorAll('[data-category-section]');
+      if (links.length && sections.length && 'IntersectionObserver' in window) {
+        var map = {};
+        links.forEach(function (l) { map[l.getAttribute('href')] = l; });
+        var current = null;
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) {
+              var link = map['#' + en.target.id];
+              if (link && link !== current) {
+                if (current) current.classList.remove('toc__link--active');
+                link.classList.add('toc__link--active');
+                current = link;
+              }
+            }
+          });
+        }, { rootMargin: '-15% 0px -70% 0px' });
+        sections.forEach(function (s) { io.observe(s); });
+      }
+    })();
+  </script>
 </body>
 </html>

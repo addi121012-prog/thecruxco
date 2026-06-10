@@ -4,23 +4,30 @@ import AdSlot from '../../components/AdSlot.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import WhatsNext from '../../components/WhatsNext.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
+import DigestBody from '../../components/DigestBody.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const digests = await getCollection('digests', d => !d.data.draft);
-  return digests.map((d) => ({ params: { slug: d.slug }, props: { entry: d } }));
+  const digests = (await getCollection('digests', d => !d.data.draft))
+    .sort((a, b) => +b.data.date - +a.data.date); // newest first
+  return digests.map((d, i) => ({
+    params: { slug: d.slug },
+    props: {
+      entry: d,
+      // newest-first sort: i+1 is the previous (older) day, i-1 the next (newer)
+      prev: digests[i + 1] ?? null,
+      next: digests[i - 1] ?? null,
+    },
+  }));
 }
 
-const { entry } = Astro.props;
+const { entry, prev, next } = Astro.props;
 const { data } = entry;
 const formatted = new Intl.DateTimeFormat('en-IN', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 }).format(data.date);
 const desc = `The daily digest for ${formatted}. Ten categories. Fifty items. Under ten minutes.`;
-
-function slugify(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
+const dayName = (d: Date) => new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'short' }).format(d);
 ---
 <Base title={data.title} description={desc} ogType="article" pubDate={data.date}>
   <div class="layout">
@@ -30,31 +37,25 @@ function slugify(name: string): string {
 
     <article class="layout__main">
       <header class="digest-intro" style="padding-top:32px;">
-        <span class="kicker">Daily Digest · {formatted}</span>
+        <div class="hero__topline">
+          <span class="kicker">Daily Digest · {formatted}</span>
+          <span class="streak-chip" data-streak-chip hidden></span>
+        </div>
         <h1>{data.title}</h1>
         {data.editorsNote && <p class="editors-note">{data.editorsNote}</p>}
       </header>
 
-      {data.categories.map((cat, ci) => (
-        <section class="category" id={`cat-${slugify(cat.name)}`}>
-          <h2 class="category-name">
-            <span class="category-name__num">{String(ci + 1).padStart(2, '0')}</span>
-            <span>{cat.name}</span>
-          </h2>
-          {cat.items.map((it) => (
-            <div class="item">
-              <p class="headline">{it.headline}</p>
-              <p class="summary">{it.summary}</p>
-              {it.source && <a class="src-link" href={it.source} rel="nofollow noopener" target="_blank">Source ↗</a>}
-            </div>
-          ))}
-          {ci === 4 && <AdSlot size="rectangle" />}
-        </section>
-      ))}
+      <DigestBody categories={data.categories} permalink={`/digest/${entry.slug}/`} />
 
-      <p style="margin-top:48px; font-family:var(--sans); font-size:14px;">
-        <a href="/digest/">← Back to archive</a>
-      </p>
+      <nav class="day-pager" aria-label="Digest navigation">
+        {prev ? (
+          <a class="day-pager__link" href={`/digest/${prev.slug}/`}>← {dayName(prev.data.date)}</a>
+        ) : <span />}
+        <a class="day-pager__link" href="/digest/">Archive</a>
+        {next ? (
+          <a class="day-pager__link" href={`/digest/${next.slug}/`}>{dayName(next.data.date)} →</a>
+        ) : <span />}
+      </nav>
     </article>
 
     <aside class="layout__sidebar">

@@ -1,0 +1,137 @@
+---
+// Shared digest renderer — used by the homepage and digest permalink pages.
+// Includes: "at a glance" lead strip, categories, per-category share row,
+// mid-digest ad slot, and the end-of-digest "caught up" retention card.
+import AdSlot from './AdSlot.astro';
+import { SITE } from '../config/site';
+
+export interface Props {
+  categories: {
+    name: string;
+    items: { headline: string; summary: string; source?: string }[];
+  }[];
+  permalink: string; // absolute path, e.g. /digest/2026-06-10/
+  showGlance?: boolean;
+}
+
+const { categories, permalink, showGlance = true } = Astro.props;
+const shareUrl = new URL(permalink, SITE.url).toString();
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+// Lead story from each of the first five categories.
+const glance = categories.slice(0, 5).map((c) => ({
+  headline: c.items[0]?.headline ?? '',
+  anchor: `#cat-${slugify(c.name)}`,
+  category: c.name,
+}));
+---
+
+{showGlance && glance.length > 0 && (
+  <nav class="glance" aria-label="Today at a glance">
+    <h2 class="glance__title">Today at a glance</h2>
+    <ol class="glance__list">
+      {glance.map((g, i) => (
+        <li class="glance__item">
+          <a href={g.anchor} class="glance__link">
+            <span class="glance__num">{i + 1}</span>
+            <span>
+              <span class="glance__cat">{g.category}</span>
+              <span class="glance__headline">{g.headline}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}
+
+{categories.map((cat, ci) => (
+  <section class="category" id={`cat-${slugify(cat.name)}`} data-category-section>
+    <h2 class="category-name">
+      <span class="category-name__num">{String(ci + 1).padStart(2, '0')}</span>
+      <span>{cat.name}</span>
+      <span class="category-name__count">{cat.items.length} items</span>
+    </h2>
+    {cat.items.map((it) => (
+      <div class="item">
+        <p class="headline">{it.headline}</p>
+        <p class="summary">{it.summary}</p>
+        {it.source && <a class="src-link" href={it.source} rel="nofollow noopener" target="_blank">Source ↗</a>}
+      </div>
+    ))}
+    <div class="share-row" data-share-row data-share-text={`${cat.name} — today on The Crux`} data-share-url={`${shareUrl}${`#cat-${slugify(cat.name)}`}`}>
+      <span class="share-row__label">Share this section</span>
+      <button class="share-btn" data-share="whatsapp" type="button" aria-label="Share on WhatsApp">WhatsApp</button>
+      <button class="share-btn" data-share="x" type="button" aria-label="Share on X">X</button>
+      <button class="share-btn" data-share="copy" type="button" aria-label="Copy link">Copy link</button>
+    </div>
+    {ci === 4 && <AdSlot size="rectangle" />}
+  </section>
+))}
+
+<section class="caught-up" id="caught-up">
+  <p class="caught-up__check" aria-hidden="true">✓</p>
+  <h2 class="caught-up__title">You're all caught up.</h2>
+  <p class="caught-up__sub">That was today's crux — every story that mattered, none that didn't.</p>
+  <p class="caught-up__streak" data-streak-line hidden></p>
+  <div class="caught-up__actions">
+    <a class="caught-up__cta" href="/subscribe/">Get tomorrow's by email</a>
+    <button class="caught-up__share share-btn" data-share="whatsapp" data-share-text={`I read today's crux in 10 minutes. ${shareUrl}`} data-share-url={shareUrl} type="button">Share on WhatsApp</button>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    // --- Share buttons (event delegation) ---
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-share]');
+      if (!btn) return;
+      var row = btn.closest('[data-share-row]') || btn;
+      var url = btn.getAttribute('data-share-url') || row.getAttribute('data-share-url') || location.href;
+      var text = btn.getAttribute('data-share-text') || row.getAttribute('data-share-text') || document.title;
+      var kind = btn.getAttribute('data-share');
+      if (kind === 'whatsapp') {
+        window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + url), '_blank', 'noopener');
+      } else if (kind === 'x') {
+        window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
+      } else if (kind === 'copy') {
+        navigator.clipboard && navigator.clipboard.writeText(url).then(function () {
+          var prev = btn.textContent;
+          btn.textContent = 'Copied ✓';
+          setTimeout(function () { btn.textContent = prev; }, 1600);
+        });
+      }
+    });
+
+    // --- Reading streak (localStorage; updates once per calendar day) ---
+    try {
+      var KEY = 'crux-streak';
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var raw = localStorage.getItem(KEY);
+      var s = raw ? JSON.parse(raw) : null;
+      var count = 1;
+      if (s && s.last) {
+        var last = new Date(s.last);
+        var diff = Math.round((today - last) / 86400000);
+        if (diff === 0) count = s.count || 1;
+        else if (diff === 1) count = (s.count || 1) + 1;
+      }
+      localStorage.setItem(KEY, JSON.stringify({ last: today.toISOString(), count: count }));
+
+      var line = document.querySelector('[data-streak-line]');
+      if (line && count >= 2) {
+        line.textContent = '🔥 ' + count + '-day reading streak. Come back tomorrow to keep it alive.';
+        line.hidden = false;
+      }
+      var chip = document.querySelector('[data-streak-chip]');
+      if (chip && count >= 2) {
+        chip.textContent = '🔥 ' + count;
+        chip.title = count + '-day reading streak';
+        chip.hidden = false;
+      }
+    } catch (e) {}
+  })();
+</script>
