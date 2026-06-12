@@ -2,7 +2,7 @@ import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 
 export async function GET(context) {
-  const digests = await getCollection('digests', d => !d.data.draft);
+  const digests = await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/'));
   const essays = await getCollection('essays', e => !e.data.draft);
 
   const digestItems = digests.map((d) => ({

@@ -8,7 +8,7 @@ import DigestBody from '../components/DigestBody.astro';
 import { getCollection } from 'astro:content';
 import { SITE } from '../config/site';
 
-const digests = (await getCollection('digests', d => !d.data.draft))
+const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')))
   .sort((a, b) => +b.data.date - +a.data.date);
 
 const latest = digests[0];

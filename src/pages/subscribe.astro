@@ -1,28 +1,283 @@
 ---
+import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Newsletter from '../components/Newsletter.astro';
+
+// Pull the most recent published digest for a live "sample issue" peek.
+const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const latest = digests[0];
+// Short labels for the chip row (the ten standing categories).
+const chipLabels = [
+  'Geopolitics', 'Economy', 'AI & Tech', 'Health & Biotech', 'Science & Space',
+  'Climate', 'Careers', 'Arts', 'Society', 'Future Ideas',
+];
+// Three lead headlines to show the quality of the writing.
+const sampleHeadlines = (latest?.data.categories ?? [])
+  .slice(0, 3)
+  .map((c) => ({ category: c.name.split(/[,&]/)[0].trim(), headline: c.items[0]?.headline }))
+  .filter((s) => s.headline);
+const latestDateLabel = latest
+  ? latest.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  : '';
 ---
-<Base title="Subscribe" description="Subscribe to TheCruxCo — daily knowledge-first news digest. Free, no spam, one click to unsubscribe.">
-  <section class="container subscribe-page">
+<Base title="Subscribe" description="Subscribe to TheCruxCo — the daily knowledge-first news digest for ambitious Indians. Ten categories, fifty items, under ten minutes. Free, no spam, one click to unsubscribe.">
+  <section class="sub-hero container" id="top">
     <span class="kicker">The Daily Crux</span>
-    <h1>Read smarter for five minutes a day.</h1>
-    <p class="tag">
-      Seven categories. Thirty-five items. Under seven minutes. Every weekday morning at 7:30 AM IST. Free, no spam, one click to unsubscribe.
+    <h1>The world, decoded before<br /><span class="sub-hero__em">your first coffee.</span></h1>
+    <p class="sub-hero__lede">
+      Ten categories. Fifty stories. Under ten minutes. One calm, clever email every
+      morning at <strong>7:30 AM IST</strong> — no celebrity, no outrage, no clickbait.
     </p>
-  </section>
 
-  <div class="container" style="max-width:560px;">
-    <Newsletter size="inline" heading="Subscribe to the daily." />
-  </div>
+    <div class="sub-hero__form">
+      <Newsletter size="inline" heading="Start reading tomorrow morning." />
+    </div>
 
-  <section class="container" style="margin-top:32px; max-width:580px;">
-    <h2 style="font-size:22px;">What you actually get</h2>
-    <ul style="padding-left:20px; color:var(--ink);">
-      <li><strong>Seven categories, every day:</strong> Geopolitics · Economy · AI &amp; Tech · Health &amp; Biotech · Science &amp; Space · Society · Future ideas.</li>
-      <li><strong>Five items per category:</strong> 60-word summary, primary source, no filler.</li>
-      <li><strong>Friday essay:</strong> a long-form piece by an anonymous correspondent.</li>
-      <li><strong>No celebrity, no outrage, no clickbait.</strong> Ever.</li>
-      <li><strong>One click to unsubscribe.</strong> No tricks, no win-back campaigns.</li>
+    <ul class="sub-trust">
+      <li><strong>Free</strong> forever</li>
+      <li aria-hidden="true" class="sub-trust__dot">·</li>
+      <li>No spam, ever</li>
+      <li aria-hidden="true" class="sub-trust__dot">·</li>
+      <li>One click to unsubscribe</li>
     </ul>
   </section>
+
+  <!-- Category chips -->
+  <section class="container sub-chips-wrap">
+    <p class="sub-chips__label">Every single day, across:</p>
+    <div class="sub-chips">
+      {chipLabels.map((c) => <span class="sub-chip">{c}</span>)}
+    </div>
+  </section>
+
+  <!-- Live sample peek -->
+  {latest && (
+    <section class="container sub-sample">
+      <div class="sub-sample__head">
+        <span class="kicker">A peek inside</span>
+        <span class="sub-sample__date">Latest · {latestDateLabel}</span>
+      </div>
+      {latest.data.editorsNote && (
+        <p class="sub-sample__note">{latest.data.editorsNote}</p>
+      )}
+      <ul class="sub-sample__list">
+        {sampleHeadlines.map((s) => (
+          <li>
+            <span class="sub-sample__cat">{s.category}</span>
+            <span class="sub-sample__hl">{s.headline}</span>
+          </li>
+        ))}
+      </ul>
+      <a class="sub-sample__cta" href="/digest/">Read the full issue →</a>
+    </section>
+  )}
+
+  <!-- What you get -->
+  <section class="container sub-benefits">
+    <h2 class="sub-benefits__title">What you actually get</h2>
+    <div class="sub-benefits__grid">
+      <div class="sub-benefit">
+        <span class="sub-benefit__num">10</span>
+        <h3>Ten categories, every day</h3>
+        <p>Geopolitics, economy, AI &amp; tech, health, science, climate, careers, arts, society, and big ideas — the whole world, in one shape.</p>
+      </div>
+      <div class="sub-benefit">
+        <span class="sub-benefit__num">5</span>
+        <h3>Five items per category</h3>
+        <p>A tight ~60-word summary and a primary source for each. The signal, never the filler.</p>
+      </div>
+      <div class="sub-benefit">
+        <span class="sub-benefit__num">1</span>
+        <h3>The Friday essay</h3>
+        <p>One long-form piece a week, written by an anonymous correspondent. Depth to go with the daily breadth.</p>
+      </div>
+      <div class="sub-benefit">
+        <span class="sub-benefit__num">0</span>
+        <h3>Zero noise</h3>
+        <p>No celebrity, no outrage, no clickbait. If it won't matter in three years, it doesn't run.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Closing CTA -->
+  <section class="container sub-close">
+    <p class="sub-close__line">Built for people who would rather read <em>The Economist</em> than the timeline.</p>
+    <a class="sub-close__btn" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Get the daily digest — free →</a>
+  </section>
 </Base>
+
+<style>
+  /* ---- Hero ---- */
+  .sub-hero {
+    text-align: center;
+    padding: 64px 0 28px;
+    max-width: 720px;
+  }
+  .sub-hero h1 {
+    font-size: clamp(34px, 6vw, 56px);
+    line-height: 1.08;
+    margin: 14px 0 18px;
+    letter-spacing: -0.02em;
+  }
+  .sub-hero__em { color: var(--accent); }
+  .sub-hero__lede {
+    font-size: clamp(17px, 2.4vw, 21px);
+    color: var(--muted);
+    max-width: 580px;
+    margin: 0 auto;
+    line-height: 1.55;
+  }
+  .sub-hero__lede strong { color: var(--ink); font-weight: 600; }
+  .sub-hero__form {
+    max-width: 540px;
+    margin: 8px auto 0;
+  }
+  .sub-trust {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 4px 0 0;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .sub-trust strong { color: var(--ink); font-weight: 600; }
+  .sub-trust__dot { color: var(--rule); }
+
+  /* ---- Category chips ---- */
+  .sub-chips-wrap { max-width: 720px; text-align: center; padding: 16px 0 8px; }
+  .sub-chips__label {
+    font-family: var(--sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .sub-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .sub-chip {
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 6px 13px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .sub-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- Live sample peek ---- */
+  .sub-sample {
+    max-width: 640px;
+    margin-top: 44px;
+    padding: 30px 32px 26px;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ink) 3%, transparent);
+  }
+  .sub-sample__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .sub-sample__date {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .sub-sample__note {
+    font-style: italic;
+    color: var(--ink);
+    margin: 0 0 20px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .sub-sample__list { list-style: none; padding: 0; margin: 0; }
+  .sub-sample__list li {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding: 12px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .sub-sample__cat {
+    font-family: var(--sans);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    flex: 0 0 84px;
+  }
+  .sub-sample__hl { font-size: 16px; line-height: 1.4; color: var(--ink); }
+  .sub-sample__cta {
+    display: inline-block;
+    margin-top: 18px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .sub-sample__cta:hover { text-decoration: underline; }
+
+  /* ---- Benefits ---- */
+  .sub-benefits { max-width: 760px; margin-top: 56px; text-align: center; }
+  .sub-benefits__title { font-size: 28px; margin: 0 0 28px; }
+  .sub-benefits__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    text-align: left;
+  }
+  .sub-benefit {
+    padding: 22px 24px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .sub-benefit:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .sub-benefit__num {
+    display: block;
+    font-family: var(--serif);
+    font-size: 34px;
+    line-height: 1;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .sub-benefit h3 { font-size: 18px; margin: 0 0 8px; }
+  .sub-benefit p { font-size: 15px; color: var(--muted); margin: 0; line-height: 1.55; }
+
+  /* ---- Closing ---- */
+  .sub-close { max-width: 640px; text-align: center; margin: 56px auto 16px; }
+  .sub-close__line { font-size: 20px; color: var(--ink); margin: 0 0 22px; }
+  .sub-close__line em { color: var(--accent); font-style: italic; }
+  .sub-close__btn {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    padding: 13px 26px;
+    color: var(--paper);
+    background: var(--ink);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+  }
+  .sub-close__btn:hover { opacity: 0.85; color: var(--paper); }
+
+  @media (max-width: 620px) {
+    .sub-hero { padding: 40px 0 20px; }
+    .sub-benefits__grid { grid-template-columns: 1fr; }
+    .sub-sample { padding: 24px 20px; }
+    .sub-sample__list li { flex-direction: column; gap: 4px; }
+    .sub-sample__cat { flex-basis: auto; }
+  }
+</style>

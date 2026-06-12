@@ -8,7 +8,7 @@ import DigestBody from '../../components/DigestBody.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const digests = (await getCollection('digests', d => !d.data.draft))
+  const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')))
     .sort((a, b) => +b.data.date - +a.data.date); // newest first
   return digests.map((d, i) => ({
     params: { slug: d.slug },

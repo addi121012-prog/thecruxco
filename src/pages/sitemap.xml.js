@@ -5,7 +5,7 @@ import { getCollection } from 'astro:content';
 import { SITE } from '../config/site';
 
 export async function GET() {
-  const digests = await getCollection('digests', d => !d.data.draft);
+  const digests = await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/'));
   const essays = await getCollection('essays', e => !e.data.draft);
 
   const staticPages = [

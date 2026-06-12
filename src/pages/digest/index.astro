@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 
-const digests = (await getCollection('digests', d => !d.data.draft))
+const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')))
   .sort((a, b) => +b.data.date - +a.data.date);
 
 const fmtDay = (d: Date) => new Intl.DateTimeFormat('en-IN', { weekday: 'short' }).format(d);
