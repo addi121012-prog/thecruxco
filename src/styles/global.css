@@ -149,11 +149,13 @@ a:hover { color: var(--accent); }
 .brand {
   font-family: var(--serif);
   font-weight: 700;
-  font-size: 26px;
-  letter-spacing: -0.01em;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.015em;
   text-decoration: none;
   color: var(--ink);
 }
+.brand__co { font-weight: 700; }
 .brand .dot { color: var(--accent); }
 .brand__logo { display: block; height: 28px; width: auto; }
 :root[data-theme="dark"] .brand__logo { filter: invert(1) hue-rotate(180deg); }
