@@ -155,6 +155,11 @@ a:hover { color: var(--accent); }
   color: var(--ink);
 }
 .brand .dot { color: var(--accent); }
+.brand__logo { display: block; height: 28px; width: auto; }
+:root[data-theme="dark"] .brand__logo { filter: invert(1) hue-rotate(180deg); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand__logo { filter: invert(1) hue-rotate(180deg); }
+}
 .header-right { display: flex; align-items: center; gap: 18px; }
 .nav { display: flex; gap: 22px; font-size: 14px; }
 .nav a { text-decoration: none; color: var(--muted); }
