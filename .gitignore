@@ -8,3 +8,9 @@ dist/
 .vscode/
 .idea/
 src/content/digests/drafts/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
