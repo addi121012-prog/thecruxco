@@ -8,23 +8,58 @@ const essays = (await getCollection('essays', e => !e.data.draft))
 const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
   day: 'numeric', month: 'long', year: 'numeric'
 }).format(d);
+
+const readTime = (body: string) => Math.max(1, Math.round(body.trim().split(/\s+/).length / 220));
+
+const [featured, ...rest] = essays;
+const pad = (n: number) => String(n).padStart(2, '0');
 ---
 <Base title="Essays" description="Long-form essays from anonymous correspondents. Slow ideas, written by hand.">
-  <section class="container">
-    <header style="padding-top:32px;">
-      <span class="kicker">Essays</span>
-      <h1>Slow ideas, written by hand.</h1>
-      <p style="color:var(--muted);">Weekly long-reads from correspondents who write under pen names — so the argument matters more than the author.</p>
+  <section class="container-wide essays-page">
+    <header class="essays-head">
+      <span class="essay-hero__kicker">
+        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+        Essays
+        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+      </span>
+      <h1 class="essays-head__title">Slow ideas, written by hand.</h1>
+      <p class="essays-head__tag">Weekly long-reads from correspondents who write under pen names — so the argument matters more than the author.</p>
     </header>
 
-    <ul class="card-list">
-      {essays.map((e) => (
-        <li>
-          <div class="meta">{e.data.author} · {fmt(e.data.pubDate)}</div>
-          <h3><a href={`/essays/${e.slug}/`}>{e.data.title}</a></h3>
-          <p>{e.data.excerpt}</p>
-        </li>
-      ))}
-    </ul>
+    {featured && (
+      <a class="essay-feature" href={`/essays/${featured.slug}/`}>
+        <div class="essay-feature__body">
+          <span class="essay-feature__badge">Latest essay</span>
+          <h2 class="essay-feature__title">{featured.data.title}</h2>
+          <p class="essay-feature__excerpt">{featured.data.excerpt}</p>
+          <div class="essay-feature__meta">
+            <span class="essay-feature__author">{featured.data.author}</span>
+            <span aria-hidden="true">·</span>
+            <time datetime={featured.data.pubDate.toISOString()}>{fmt(featured.data.pubDate)}</time>
+            <span aria-hidden="true">·</span>
+            <span>{readTime(featured.body)} min read</span>
+          </div>
+          <span class="essay-feature__cta">Read the essay <span aria-hidden="true">→</span></span>
+        </div>
+      </a>
+    )}
+
+    {rest.length > 0 && (
+      <ul class="essay-list">
+        {rest.map((e, i) => (
+          <li class="essay-list__item">
+            <a class="essay-list__link" href={`/essays/${e.slug}/`}>
+              <span class="essay-list__num" aria-hidden="true">{pad(rest.length - i)}</span>
+              <span class="essay-list__body">
+                <span class="essay-list__meta">{e.data.author} · {fmt(e.data.pubDate)} · {readTime(e.body)} min read</span>
+                <span class="essay-list__title">{e.data.title}</span>
+                <span class="essay-list__excerpt">{e.data.excerpt}</span>
+              </span>
+              <span class="essay-list__arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
   </section>
 </Base>

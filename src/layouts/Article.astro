@@ -10,30 +10,94 @@ export interface Props {
   pubDate: Date;
   author?: string;
   kicker?: string;
+  readingTime?: number;
+  related?: {
+    slug: string;
+    title: string;
+    excerpt?: string;
+    pubDate: Date;
+    author?: string;
+  }[];
 }
 
-const { title, description, pubDate, author, kicker } = Astro.props;
+const { title, description, pubDate, author, kicker, readingTime, related = [] } = Astro.props;
 
 const formatted = new Intl.DateTimeFormat('en-IN', {
-  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  day: 'numeric', month: 'long', year: 'numeric'
 }).format(pubDate);
+
+const fmtShort = (d: Date) => new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric', month: 'short', year: 'numeric'
+}).format(d);
 ---
-<Base title={title} description={description} ogType="article">
-  <div class="layout">
-    <article class="layout__main">
-      <header>
-        {kicker && <span class="kicker">{kicker}</span>}
-        <h1>{title}</h1>
-        <p class="byline">
-          {author ? `By ${author}` : 'By a Correspondent'} · <span class="dateline">{formatted}</span>
-        </p>
-      </header>
-      <div class="prose">
+<Base title={title} description={description} ogType="article" pubDate={pubDate} author={author}>
+
+  {/* ---------- Hero ---------- */}
+  <header class="essay-hero">
+    <div class="essay-hero__inner">
+      {kicker && (
+        <span class="essay-hero__kicker">
+          <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+          {kicker}
+          <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+        </span>
+      )}
+      <h1 class="essay-hero__title">{title}</h1>
+      {description && <p class="essay-hero__standfirst">{description}</p>}
+      <div class="essay-hero__byline">
+        <span class="essay-hero__author">{author ?? 'By a Correspondent'}</span>
+        <span class="essay-hero__sep" aria-hidden="true">·</span>
+        <time datetime={pubDate.toISOString()}>{formatted}</time>
+        {readingTime && (
+          <>
+            <span class="essay-hero__sep" aria-hidden="true">·</span>
+            <span>{readingTime} min read</span>
+          </>
+        )}
+      </div>
+    </div>
+  </header>
+
+  {/* ---------- Body ---------- */}
+  <div class="essay-layout">
+    <article class="essay-layout__main">
+      <div class="prose prose--essay">
         <slot />
       </div>
+
+      <div class="essay-end">
+        <div class="essay-end__fleuron" aria-hidden="true">◆ ◆ ◆</div>
+        <div class="share-row essay-end__share">
+          <span class="share-row__label">Share this essay</span>
+          <button class="share-btn" type="button" data-share="copy">Copy link</button>
+          <button class="share-btn" type="button" data-share="whatsapp">WhatsApp</button>
+          <button class="share-btn" type="button" data-share="x">X</button>
+          <button class="share-btn" type="button" data-share="linkedin">LinkedIn</button>
+        </div>
+      </div>
+
+      <Newsletter size="inline" kicker="Enjoyed this?" heading="One essay a week. One digest a day." />
+
+      {related.length > 0 && (
+        <nav class="read-next" aria-label="More essays">
+          <h2 class="read-next__title">Read next</h2>
+          <ul class="read-next__list">
+            {related.map((r) => (
+              <li>
+                <a class="read-next__card" href={`/essays/${r.slug}/`}>
+                  <span class="read-next__meta">{r.author ?? 'By a Correspondent'} · {fmtShort(r.pubDate)}</span>
+                  <span class="read-next__headline">{r.title}</span>
+                  {r.excerpt && <span class="read-next__excerpt">{r.excerpt}</span>}
+                  <span class="read-next__cta">Read the essay <span aria-hidden="true">→</span></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </article>
 
-    <aside class="layout__sidebar">
+    <aside class="essay-layout__sidebar">
       <div class="sidebar-block">
         <Newsletter size="sidebar" />
       </div>
@@ -45,4 +109,29 @@ const formatted = new Intl.DateTimeFormat('en-IN', {
       </div>
     </aside>
   </div>
+
+  <script is:inline>
+    (function () {
+      var url = window.location.href;
+      var title = document.title;
+      document.querySelectorAll('[data-share]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var kind = btn.getAttribute('data-share');
+          if (kind === 'copy') {
+            navigator.clipboard.writeText(url).then(function () {
+              var prev = btn.textContent;
+              btn.textContent = 'Copied ✓';
+              setTimeout(function () { btn.textContent = prev; }, 1600);
+            });
+          } else if (kind === 'whatsapp') {
+            window.open('https://wa.me/?text=' + encodeURIComponent(title + ' — ' + url), '_blank', 'noopener');
+          } else if (kind === 'x') {
+            window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(title) + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
+          } else if (kind === 'linkedin') {
+            window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url), '_blank', 'noopener');
+          }
+        });
+      });
+    })();
+  </script>
 </Base>

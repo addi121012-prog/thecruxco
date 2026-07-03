@@ -4,12 +4,27 @@ import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const essays = await getCollection('essays', e => !e.data.draft);
-  return essays.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+  return essays.map((e) => ({ params: { slug: e.slug }, props: { entry: e, all: essays } }));
 }
 
-const { entry } = Astro.props;
+const { entry, all } = Astro.props;
 const { data } = entry;
 const { Content } = await entry.render();
+
+const words = entry.body.trim().split(/\s+/).length;
+const readingTime = Math.max(1, Math.round(words / 220));
+
+const related = all
+  .filter((e) => e.slug !== entry.slug)
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
+  .slice(0, 2)
+  .map((e) => ({
+    slug: e.slug,
+    title: e.data.title,
+    excerpt: e.data.excerpt,
+    pubDate: e.data.pubDate,
+    author: e.data.author,
+  }));
 ---
 <Article
   title={data.title}
@@ -17,6 +32,8 @@ const { Content } = await entry.render();
   pubDate={data.pubDate}
   author={data.author}
   kicker="Essay"
+  readingTime={readingTime}
+  related={related}
 >
   <Content />
 </Article>
