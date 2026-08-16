@@ -1,6 +1,5 @@
 ---
 import Base from './Base.astro';
-import AdSlot from '../components/AdSlot.astro';
 import Newsletter from '../components/Newsletter.astro';
 import WhatsNext from '../components/WhatsNext.astro';
 
@@ -100,9 +99,6 @@ const fmtShort = (d: Date) => new Intl.DateTimeFormat('en-IN', {
     <aside class="essay-layout__sidebar">
       <div class="sidebar-block">
         <Newsletter size="sidebar" />
-      </div>
-      <div class="sidebar-block">
-        <AdSlot size="rectangle" />
       </div>
       <div class="sidebar-block">
         <WhatsNext variant="sidebar" />

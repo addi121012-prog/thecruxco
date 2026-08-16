@@ -1,96 +1,219 @@
 ---
 import Base from '../layouts/Base.astro';
-import AdSlot from '../components/AdSlot.astro';
 import Newsletter from '../components/Newsletter.astro';
-import WhatsNext from '../components/WhatsNext.astro';
-import TableOfContents from '../components/TableOfContents.astro';
-import DigestBody from '../components/DigestBody.astro';
 import { getCollection } from 'astro:content';
-import { SITE } from '../config/site';
+import { SITE, BRANDS } from '../config/site';
 
-const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')))
-  .sort((a, b) => +b.data.date - +a.data.date);
+const essays = (await getCollection('essays', e => !e.data.draft))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
 
-const latest = digests[0];
-const yesterday = digests[1];
-const recentEssays = (await getCollection('essays', e => !e.data.draft))
-  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
-  .slice(0, 3);
+const featured = essays[0];
+const rest = essays.slice(1, 3);
 
-const formatted = latest ? new Intl.DateTimeFormat('en-IN', {
-  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-}).format(latest.data.date) : '';
+const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')));
 
-const itemCount = latest
-  ? latest.data.categories.reduce((n, c) => n + c.items.length, 0)
-  : 0;
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric', month: 'short', year: 'numeric'
+}).format(d);
+
+// Rough reading time from the essay body, so the "length declared up front"
+// promise is computed rather than guessed.
+const words = featured ? featured.body.trim().split(/\s+/).length : 0;
+const minutes = Math.max(1, Math.round(words / 220));
 ---
 <Base title={SITE.name} description={SITE.description}>
-  <section class="container-wide hero">
-    <div class="hero__topline">
-      <span class="kicker">Today · {formatted}</span>
-      <span class="streak-chip" data-streak-chip hidden></span>
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <section class="container-wide home-hero">
+    <h1 class="home-hero__title">
+      We make fewer things.<br />
+      <em>Then we tell you what we left out.</em>
+    </h1>
+    <p class="home-hero__sub">
+      The Crux Co builds a small number of guides, products and meals — each one cut down to what
+      actually works. No catalogues. No “everything you need.” We publish the reasoning behind every
+      decision, including the parts that make us look worse.
+    </p>
+    <div class="home-hero__actions">
+      <a href="#start" class="btn-solid">Start with the writing →</a>
+      <a href="/company/" class="btn-line">What we're building</a>
     </div>
-    <h1>{latest ? latest.data.title : 'Get to the crux.'}</h1>
-    <p class="tag">
-      {latest ? `${latest.data.categories.length} categories · ${itemCount} items · under ten minutes.` : 'Ten categories. Fifty items. Under ten minutes. Every day.'}
+    <p class="home-hero__note">
+      A guide company, a product company and a food company. One standard between them:
+      if we can't defend why it's in, it's out.
     </p>
   </section>
 
-  <div class="layout">
-    {latest && (
-      <aside class="layout__toc">
-        <TableOfContents categories={latest.data.categories} />
-      </aside>
+  <!-- ── 01 · Start here ──────────────────────────────────── -->
+  <section class="container-wide home-section" id="start">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>Start here.</h2>
+    </div>
+
+    {featured && (
+      <a href={`/essays/${featured.slug}/`} class="featured-card">
+        <div class="featured-card__body">
+          <div class="featured-card__meta">
+            {minutes} MIN READ · {featured.data.author.toUpperCase()} · {fmt(featured.data.pubDate).toUpperCase()}
+          </div>
+          <h3 class="featured-card__title">{featured.data.title}</h3>
+          <p class="featured-card__excerpt">{featured.data.excerpt}</p>
+        </div>
+        <span class="featured-card__cta">Read it →</span>
+      </a>
     )}
 
-    <article class="layout__main">
-      {latest && (
-        <>
-          {latest.data.editorsNote && (
-            <p class="editors-note">{latest.data.editorsNote}</p>
-          )}
+    <p class="featured-note">
+      Free, and you don't need to give us an email to read it — the whole thing is on the page.
+    </p>
 
-          <DigestBody categories={latest.data.categories} permalink={`/digest/${latest.slug}/`} />
+    {rest.length > 0 && (
+      <ul class="home-more">
+        {rest.map((e) => (
+          <li>
+            <a href={`/essays/${e.slug}/`}>
+              <span class="home-more__meta">{e.data.author} · {fmt(e.data.pubDate)}</span>
+              <span class="home-more__title">{e.data.title}</span>
+            </a>
+          </li>
+        ))}
+        <li>
+          <a href="/essays/">
+            <span class="home-more__meta">Everything else</span>
+            <span class="home-more__title">Browse all the writing →</span>
+          </a>
+        </li>
+      </ul>
+    )}
+  </section>
 
-          <nav class="day-pager" aria-label="Digest navigation">
-            {yesterday && (
-              <a class="day-pager__link" href={`/digest/${yesterday.slug}/`}>
-                ← Missed yesterday? Read {new Intl.DateTimeFormat('en-IN', { weekday: 'long' }).format(yesterday.data.date)}'s crux
-              </a>
-            )}
-            <a class="day-pager__link" href="/digest/">Browse the archive →</a>
-          </nav>
-        </>
-      )}
+  <!-- ── 02 · The three brands ────────────────────────────── -->
+  <section class="container-wide home-section">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>We're building three things. One is live.</h2>
+    </div>
 
-      {recentEssays.length > 0 && (
-        <section style="margin-top:80px;">
-          <span class="kicker">From the essays</span>
-          <h2 style="margin-top:6px;">Slow ideas, written by hand.</h2>
-          <ul class="card-list">
-            {recentEssays.map((e) => (
-              <li>
-                <div class="meta">{e.data.author} · {new Intl.DateTimeFormat('en-IN', { day:'numeric', month:'short', year:'numeric'}).format(e.data.pubDate)}</div>
-                <h3><a href={`/essays/${e.slug}/`}>{e.data.title}</a></h3>
-                <p>{e.data.excerpt}</p>
-              </li>
+    <div class="brand-rows">
+      {BRANDS.map((b) => (
+        <div class="brand-row">
+          <div class="brand-row__id">
+            <div class="brand-row__name">
+              <span class="brand-row__dot" style={`background:${b.accent}`} aria-hidden="true"></span>
+              {b.name}
+            </div>
+            <span class={`brand-row__status brand-row__status--${b.status}`}>{b.statusLabel}</span>
+          </div>
+
+          <div class="brand-row__desc">
+            <p>{b.blurb}</p>
+            <p class="brand-row__cut">{b.cut}</p>
+            <a href={b.href} class="brand-row__link">{b.hrefLabel} →</a>
+          </div>
+
+          <dl class="brand-row__facts">
+            {b.facts.map((f) => (
+              <div>
+                <dt>{f.k}</dt>
+                <dd>{f.v}</dd>
+              </div>
             ))}
-          </ul>
-        </section>
-      )}
-    </article>
+          </dl>
+        </div>
+      ))}
+    </div>
+  </section>
 
-    <aside class="layout__sidebar">
-      <div class="sidebar-block">
-        <Newsletter size="sidebar" />
+  <!-- ── 03 · The standard ────────────────────────────────── -->
+  <section class="container-wide home-section">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Everything has to pass the same test.</h2>
+    </div>
+
+    <div class="standard-grid">
+      <ol class="tests">
+        <li><b>It has to beat what we'd otherwise recommend.</b> If someone else already makes the best version, we'll tell you to buy theirs.</li>
+        <li><b>It has to do less than the competition, not more.</b> If the only way to justify it is a longer feature list, it fails.</li>
+        <li><b>The reasoning has to be publishable.</b> If we can't explain the decision in public, we don't ship it.</li>
+        <li><b>We have to be able to name its flaws.</b> Every product page says who it isn't for.</li>
+        <li><b>We have to use it ourselves.</b> Not once, for a photo. Regularly.</li>
+      </ol>
+
+      <aside class="standard-aside">
+        <p><b>Standard v1.0 — published August 2026.</b></p>
+        <p>
+          There is also a list of things that failed these tests, and why. It is longer than the list
+          of things we sell. We think that's the point.
+        </p>
+        <a href="/standards/" class="btn-line">Read the full standard →</a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ── 04 · Where this came from ────────────────────────── -->
+  <section class="container-wide home-section">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Where this came from.</h2>
+    </div>
+
+    <div class="origin-grid">
+      <div class="origin-body">
+        <p class="origin-lead">We started with a news product. It didn't work.</p>
+        <p>
+          The idea was to cut fifty stories a day down to the ones that mattered. It failed as a
+          business — the model needed an audience we never built, funded by ads we were never going to
+          sell enough of. But it taught us the thing this company is now built on: the hard part is
+          never finding what to include. It's having the discipline to leave things out, and the
+          nerve to say what you cut.
+        </p>
+        <p>
+          So we pointed that at other things. Food where you can read the whole label. Products chosen
+          because we couldn't find a better one, not because a supplier had stock. Guides that end
+          when the useful part ends.
+        </p>
+        <p>
+          That's the whole company. It's run by one person, in India, and you can
+          <a href="/contact/">email him</a>.
+        </p>
       </div>
-      <div class="sidebar-block">
-        <AdSlot size="rectangle" />
+
+      <ol class="origin-timeline">
+        <li><span>MAY 2026</span><em>Launched a daily news digest</em></li>
+        <li><span>JUL 2026</span><em>Stopped after {digests.length} editions. Wrong business model, not wrong idea.</em></li>
+        <li class="is-now"><span>AUG 2026</span><em>Restarted as The Crux Co</em></li>
+        <li><span>Q1 2027</span><em>Crux Picks, planned</em></li>
+        <li><span>MID 2027</span><em>The Usual, planned</em></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── 05 · Subscribe ───────────────────────────────────── -->
+  <section class="home-subscribe">
+    <div class="container-wide">
+      <div class="sec-head sec-head--invert">
+        <span class="sec-num">05</span>
+        <h2>What's next depends on what works.</h2>
       </div>
-      <div class="sidebar-block">
-        <WhatsNext variant="sidebar" />
+
+      <div class="subscribe-grid">
+        <div>
+          <p>
+            We'll add something new when the last thing is genuinely good, and not before. If you want
+            to know when that happens, the email list is the only place we announce it.
+          </p>
+          <p class="subscribe-second">
+            One email a week. Usually something we've been researching, occasionally something we've
+            decided not to build.
+          </p>
+        </div>
+        <div class="subscribe-form">
+          <Newsletter size="sidebar" />
+        </div>
       </div>
-    </aside>
-  </div>
+    </div>
+  </section>
+
 </Base>

@@ -1,6 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import AdSlot from '../../components/AdSlot.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import WhatsNext from '../../components/WhatsNext.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
@@ -26,7 +25,7 @@ const { data } = entry;
 const formatted = new Intl.DateTimeFormat('en-IN', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 }).format(data.date);
-const desc = `The daily digest for ${formatted}. Ten categories. Fifty items. Under ten minutes.`;
+const desc = `Archived: The Crux daily digest for ${formatted}. Ten categories, fifty items. The digest ran May–July 2026 and is no longer published.`;
 const dayName = (d: Date) => new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'short' }).format(d);
 ---
 <Base title={data.title} description={desc} ogType="article" pubDate={data.date}>
@@ -43,6 +42,11 @@ const dayName = (d: Date) => new Intl.DateTimeFormat('en-IN', { weekday: 'long',
         </div>
         <h1>{data.title}</h1>
         {data.editorsNote && <p class="editors-note">{data.editorsNote}</p>}
+        <p class="archived-notice">
+          <b>Archived.</b> The Crux daily digest ran from May to July 2026 and is no longer published.
+          This page is kept as it was. <a href="/about/">Why we stopped</a> ·
+          <a href="/">what we're doing now</a>.
+        </p>
       </header>
 
       <DigestBody categories={data.categories} permalink={`/digest/${entry.slug}/`} />
@@ -61,9 +65,6 @@ const dayName = (d: Date) => new Intl.DateTimeFormat('en-IN', { weekday: 'long',
     <aside class="layout__sidebar">
       <div class="sidebar-block">
         <Newsletter size="sidebar" />
-      </div>
-      <div class="sidebar-block">
-        <AdSlot size="rectangle" />
       </div>
       <div class="sidebar-block">
         <WhatsNext variant="sidebar" />

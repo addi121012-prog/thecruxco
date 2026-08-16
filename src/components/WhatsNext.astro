@@ -1,44 +1,28 @@
 ---
+// The three brands, with honest status. Driven by BRANDS in config/site.ts.
+// Nothing is marked "Live" until it can actually be read or bought today.
+import { BRANDS } from '../config/site';
+
 export interface Props {
   variant?: 'sidebar' | 'block';
 }
 
 const { variant = 'sidebar' } = Astro.props;
-
-const cards = [
-  {
-    name: 'The Crux Monthly',
-    kicker: 'E-magazine',
-    blurb: 'A monthly long-form PDF for subscribers. First issue October 2026.',
-    status: 'Coming soon',
-  },
-  {
-    name: 'The Crux Markets',
-    kicker: 'Daily brief',
-    blurb: 'A 5-min markets digest for finance professionals. Early 2027.',
-    status: 'Coming soon',
-  },
-  {
-    name: 'The Crux Store',
-    kicker: 'Merchandise',
-    blurb: 'A few things worth keeping. Details to come.',
-    status: 'Coming soon',
-  },
-];
 ---
 
 <section class={`whats-next whats-next--${variant}`} aria-labelledby="whats-next-heading">
-  <h3 id="whats-next-heading" class="whats-next__sidebar-title">What's next</h3>
+  <h3 id="whats-next-heading" class="whats-next__sidebar-title">What we're building</h3>
   <div class="whats-next__stack">
-    {cards.map((c) => (
+    {BRANDS.map((b) => (
       <article class="whats-next__card">
         <div class="whats-next__card-head">
-          <span class="kicker whats-next__kicker">{c.kicker}</span>
-          <span class="whats-next__badge">{c.status}</span>
+          <span class="whats-next__dot" style={`background:${b.accent}`} aria-hidden="true"></span>
+          <span class={`whats-next__badge whats-next__badge--${b.status}`}>{b.statusLabel}</span>
         </div>
-        <h4 class="whats-next__name">{c.name}</h4>
-        <p class="whats-next__blurb">{c.blurb}</p>
+        <h4 class="whats-next__name">{b.name}</h4>
+        <p class="whats-next__blurb">{b.blurb}</p>
       </article>
     ))}
   </div>
+  <a class="whats-next__more" href="/company/">Why these three →</a>
 </section>

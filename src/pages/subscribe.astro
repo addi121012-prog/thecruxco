@@ -1,109 +1,95 @@
 ---
-import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Newsletter from '../components/Newsletter.astro';
+import { getCollection } from 'astro:content';
 
-// Pull the most recent published digest for a live "sample issue" peek.
-const digests = (await getCollection('digests', d => !d.data.draft && !d.slug.startsWith('drafts/')))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-const latest = digests[0];
-// Short labels for the chip row (the ten standing categories).
-const chipLabels = [
-  'Geopolitics', 'Economy', 'AI & Tech', 'Health & Biotech', 'Science & Space',
-  'Climate', 'Careers', 'Arts', 'Society', 'Future Ideas',
-];
-// Three lead headlines to show the quality of the writing.
-const sampleHeadlines = (latest?.data.categories ?? [])
-  .slice(0, 3)
-  .map((c) => ({ category: c.name.split(/[,&]/)[0].trim(), headline: c.items[0]?.headline }))
-  .filter((s) => s.headline);
-const latestDateLabel = latest
-  ? latest.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-  : '';
+const essays = (await getCollection('essays', e => !e.data.draft))
+  .sort((a, b) => +b.data.pubDate - +a.data.pubDate)
+  .slice(0, 3);
+
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric', month: 'short', year: 'numeric'
+}).format(d);
 ---
-<Base title="Subscribe" description="Subscribe to TheCruxCo — the daily knowledge-first news digest for ambitious Indians. Ten categories, fifty items, under ten minutes. Free, no spam, one click to unsubscribe.">
+<Base
+  title="Subscribe"
+  description="One email a week from The Crux Co. Usually something we've been researching, occasionally something we've decided not to build. Free, no ads, one click to unsubscribe."
+>
   <section class="sub-hero container" id="top">
-    <span class="kicker">The Daily Crux</span>
-    <h1>The world, decoded before<br /><span class="sub-hero__em">your first coffee.</span></h1>
+    <span class="meta-strip">The list</span>
+    <h1>One email a week.<br /><span class="sub-hero__em">Nothing else.</span></h1>
     <p class="sub-hero__lede">
-      Ten categories. Fifty stories. Under ten minutes. One calm, clever email every
-      morning at <strong>7:30 AM IST</strong> — no celebrity, no outrage, no clickbait.
+      Usually something we've been researching. Occasionally something we've decided
+      <em>not</em> to build, and why. When a new guide or product is ready, this is where it gets
+      announced — usually only here.
     </p>
 
     <div class="sub-hero__form">
-      <Newsletter size="inline" heading="Start reading tomorrow morning." />
+      <Newsletter size="inline" heading="Join the list." />
     </div>
 
     <ul class="sub-trust">
-      <li><strong>Free</strong> forever</li>
+      <li><strong>Free</strong></li>
       <li aria-hidden="true" class="sub-trust__dot">·</li>
-      <li>No spam, ever</li>
+      <li>No ads, no sponsors</li>
       <li aria-hidden="true" class="sub-trust__dot">·</li>
-      <li>One click to unsubscribe</li>
+      <li>Unsubscribe link at the top of every email</li>
     </ul>
   </section>
 
-  <!-- Category chips -->
-  <section class="container sub-chips-wrap">
-    <p class="sub-chips__label">Every single day, across:</p>
-    <div class="sub-chips">
-      {chipLabels.map((c) => <span class="sub-chip">{c}</span>)}
-    </div>
-  </section>
-
-  <!-- Live sample peek -->
-  {latest && (
-    <section class="container sub-sample">
-      <div class="sub-sample__head">
-        <span class="kicker">A peek inside</span>
-        <span class="sub-sample__date">Latest · {latestDateLabel}</span>
-      </div>
-      {latest.data.editorsNote && (
-        <p class="sub-sample__note">{latest.data.editorsNote}</p>
-      )}
-      <ul class="sub-sample__list">
-        {sampleHeadlines.map((s) => (
-          <li>
-            <span class="sub-sample__cat">{s.category}</span>
-            <span class="sub-sample__hl">{s.headline}</span>
-          </li>
-        ))}
-      </ul>
-      <a class="sub-sample__cta" href="/digest/">Read the full issue →</a>
-    </section>
-  )}
-
-  <!-- What you get -->
+  <!-- What you actually get -->
   <section class="container sub-benefits">
     <h2 class="sub-benefits__title">What you actually get</h2>
     <div class="sub-benefits__grid">
       <div class="sub-benefit">
-        <span class="sub-benefit__num">10</span>
-        <h3>Ten categories, every day</h3>
-        <p>Geopolitics, economy, AI &amp; tech, health, science, climate, careers, arts, society, and big ideas — the whole world, in one shape.</p>
-      </div>
-      <div class="sub-benefit">
-        <span class="sub-benefit__num">5</span>
-        <h3>Five items per category</h3>
-        <p>A tight ~60-word summary and a primary source for each. The signal, never the filler.</p>
-      </div>
-      <div class="sub-benefit">
         <span class="sub-benefit__num">1</span>
-        <h3>The Friday essay</h3>
-        <p>One long-form piece a week, written by an anonymous correspondent. Depth to go with the daily breadth.</p>
+        <h3>One email, most weeks</h3>
+        <p>Not daily. If there's nothing worth sending, we don't send anything — which happens, and we'd rather that than filler.</p>
       </div>
       <div class="sub-benefit">
         <span class="sub-benefit__num">0</span>
-        <h3>Zero noise</h3>
-        <p>No celebrity, no outrage, no clickbait. If it won't matter in three years, it doesn't run.</p>
+        <h3>Zero advertising</h3>
+        <p>No sponsors, no paid placement, no undisclosed affiliate links. We tried ad funding once and it pointed everything at traffic instead of usefulness.</p>
+      </div>
+      <div class="sub-benefit">
+        <span class="sub-benefit__num">→</span>
+        <h3>First look at everything</h3>
+        <p>New guides, the first Crux Picks verdicts, and the food brand when it exists. All of it gets announced here before anywhere else.</p>
+      </div>
+      <div class="sub-benefit">
+        <span class="sub-benefit__num">✕</span>
+        <h3>The things we killed</h3>
+        <p>We publish what failed our own <a href="/standards/">standard</a> and why. That list is longer than the list of things we sell.</p>
       </div>
     </div>
   </section>
 
-  <!-- Closing CTA -->
+  <!-- A peek at the writing -->
+  {essays.length > 0 && (
+    <section class="container sub-sample">
+      <div class="sub-sample__head">
+        <span class="meta-strip">A peek at the writing</span>
+        <span class="sub-sample__date">Free, ungated</span>
+      </div>
+      <ul class="sub-sample__list">
+        {essays.map((e) => (
+          <li>
+            <span class="sub-sample__cat">{fmt(e.data.pubDate)}</span>
+            <span class="sub-sample__hl"><a href={`/essays/${e.slug}/`}>{e.data.title}</a></span>
+          </li>
+        ))}
+      </ul>
+      <a class="sub-sample__cta" href="/essays/">Read it all first, then decide →</a>
+    </section>
+  )}
+
+  <!-- Honest note -->
   <section class="container sub-close">
-    <p class="sub-close__line">Built for people who would rather read <em>The Economist</em> than the timeline.</p>
-    <a class="sub-close__btn" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Get the daily digest — free →</a>
+    <p class="sub-close__line">
+      Worth saying plainly: this is a one-person company that is early, and the list is small.
+      You'd be joining before it's impressive. <em>That's the trade.</em>
+    </p>
+    <a class="sub-close__btn" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Join the list →</a>
   </section>
 </Base>
 
@@ -124,14 +110,14 @@ const latestDateLabel = latest
   .sub-hero__lede {
     font-size: clamp(17px, 2.4vw, 21px);
     color: var(--muted);
-    max-width: 580px;
+    max-width: 600px;
     margin: 0 auto;
     line-height: 1.55;
   }
-  .sub-hero__lede strong { color: var(--ink); font-weight: 600; }
+  .sub-hero__lede em { color: var(--ink); font-style: italic; }
   .sub-hero__form {
     max-width: 540px;
-    margin: 8px auto 0;
+    margin: 26px auto 0;
   }
   .sub-trust {
     list-style: none;
@@ -141,7 +127,7 @@ const latestDateLabel = latest
     justify-content: center;
     align-items: center;
     padding: 0;
-    margin: 4px 0 0;
+    margin: 14px 0 0;
     font-family: var(--sans);
     font-size: 13px;
     color: var(--muted);
@@ -149,37 +135,14 @@ const latestDateLabel = latest
   .sub-trust strong { color: var(--ink); font-weight: 600; }
   .sub-trust__dot { color: var(--rule); }
 
-  /* ---- Category chips ---- */
-  .sub-chips-wrap { max-width: 720px; text-align: center; padding: 16px 0 8px; }
-  .sub-chips__label {
-    font-family: var(--sans);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-    margin: 0 0 14px;
-  }
-  .sub-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-  .sub-chip {
-    font-family: var(--sans);
-    font-size: 13px;
-    padding: 6px 13px;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    color: var(--ink);
-    background: transparent;
-    transition: border-color 0.15s ease, color 0.15s ease;
-  }
-  .sub-chip:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ---- Live sample peek ---- */
+  /* ---- Sample ---- */
   .sub-sample {
     max-width: 640px;
-    margin-top: 44px;
+    margin-top: 56px;
     padding: 30px 32px 26px;
     border: 1px solid var(--rule);
     border-radius: 14px;
-    background: color-mix(in srgb, var(--ink) 3%, transparent);
+    background: var(--card);
   }
   .sub-sample__head {
     display: flex;
@@ -194,13 +157,6 @@ const latestDateLabel = latest
     color: var(--muted);
     letter-spacing: 0.02em;
   }
-  .sub-sample__note {
-    font-style: italic;
-    color: var(--ink);
-    margin: 0 0 20px;
-    font-size: 17px;
-    line-height: 1.5;
-  }
   .sub-sample__list { list-style: none; padding: 0; margin: 0; }
   .sub-sample__list li {
     display: flex;
@@ -214,10 +170,12 @@ const latestDateLabel = latest
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--accent);
-    flex: 0 0 84px;
+    color: var(--muted);
+    flex: 0 0 92px;
   }
-  .sub-sample__hl { font-size: 16px; line-height: 1.4; color: var(--ink); }
+  .sub-sample__hl { font-size: 16px; line-height: 1.4; }
+  .sub-sample__hl a { text-decoration: none; }
+  .sub-sample__hl a:hover { color: var(--accent); }
   .sub-sample__cta {
     display: inline-block;
     margin-top: 18px;
@@ -257,7 +215,7 @@ const latestDateLabel = latest
 
   /* ---- Closing ---- */
   .sub-close { max-width: 640px; text-align: center; margin: 56px auto 16px; }
-  .sub-close__line { font-size: 20px; color: var(--ink); margin: 0 0 22px; }
+  .sub-close__line { font-size: 20px; color: var(--ink); margin: 0 0 22px; line-height: 1.5; }
   .sub-close__line em { color: var(--accent); font-style: italic; }
   .sub-close__btn {
     display: inline-block;

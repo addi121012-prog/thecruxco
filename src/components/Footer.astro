@@ -1,15 +1,54 @@
 ---
+import { BRANDS } from '../config/site';
+
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer">
-  <div class="container-wide row">
-    <div>© {year} TheCruxCo. Signal over noise.</div>
-    <div>
-      <a href="/about/">About</a> ·
-      <a href="/editorial-standards/">Editorial standards</a> ·
-      <a href="/privacy/">Privacy</a> ·
-      <a href="/contact/">Contact</a> ·
-      <a href="/rss.xml">RSS</a>
+  <div class="container-wide">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-mark">The Crux Co<span class="dot">.</span></div>
+        <p class="footer-tag">Fewer things.<br />Each one worth it.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Brands</h4>
+        {BRANDS.map((b) => (
+          <a href={b.href}>
+            {b.name}
+            <small>
+              {b.slug === 'guides' && 'Short, finishable guides'}
+              {b.slug === 'picks' && 'One verdict, and what we rejected — not yet'}
+              {b.slug === 'the-usual' && 'Six dishes, real macros — not yet'}
+            </small>
+          </a>
+        ))}
+      </div>
+
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/standards/">The Standard</a>
+        <a href="/company/">What we're building</a>
+        <a href="/about/">About</a>
+        <a href="/contact/">Contact</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Elsewhere</h4>
+        <a href="/essays/">Writing</a>
+        <a href="/digest/">Digest archive</a>
+        <a href="/rss.xml">RSS</a>
+        <a href="/privacy/">Privacy</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-promises">
+        <span>No ads.</span>
+        <span>No sponsored posts.</span>
+        <span>No undisclosed affiliate links.</span>
+      </div>
+      <div>© {year} The Crux Co · India</div>
     </div>
   </div>
 </footer>

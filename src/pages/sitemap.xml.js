@@ -9,13 +9,17 @@ export async function GET() {
   const essays = await getCollection('essays', e => !e.data.draft);
 
   const staticPages = [
-    { url: '/', priority: '1.0', changefreq: 'daily' },
-    { url: '/digest/', priority: '0.9', changefreq: 'daily' },
-    { url: '/essays/', priority: '0.8', changefreq: 'weekly' },
-    { url: '/about/', priority: '0.6', changefreq: 'monthly' },
+    { url: '/', priority: '1.0', changefreq: 'weekly' },
+    { url: '/essays/', priority: '0.9', changefreq: 'weekly' },
+    { url: '/standards/', priority: '0.8', changefreq: 'monthly' },
+    { url: '/company/', priority: '0.8', changefreq: 'monthly' },
     { url: '/subscribe/', priority: '0.8', changefreq: 'monthly' },
-    { url: '/editorial-standards/', priority: '0.4', changefreq: 'monthly' },
-    { url: '/privacy/', priority: '0.3', changefreq: 'monthly' },
+    { url: '/about/', priority: '0.7', changefreq: 'monthly' },
+    // Digest archive: closed July 2026. Kept indexed for the existing
+    // long-tail, but no longer signalled as fresh.
+    { url: '/digest/', priority: '0.5', changefreq: 'yearly' },
+    { url: '/editorial-standards/', priority: '0.3', changefreq: 'yearly' },
+    { url: '/privacy/', priority: '0.3', changefreq: 'yearly' },
     { url: '/contact/', priority: '0.4', changefreq: 'monthly' },
   ];
 
@@ -23,8 +27,8 @@ export async function GET() {
     .sort((a, b) => +b.data.date - +a.data.date)
     .map((d) => ({
       url: `/digest/${d.slug}/`,
-      priority: '0.9',
-      changefreq: 'monthly',
+      priority: '0.5',
+      changefreq: 'yearly',
       lastmod: d.data.date.toISOString().split('T')[0],
     }));
 

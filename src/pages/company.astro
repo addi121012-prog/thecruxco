@@ -1,0 +1,101 @@
+---
+import Base from '../layouts/Base.astro';
+import { BRANDS } from '../config/site';
+---
+<Base
+  title="What we're building"
+  description="The Crux Co is a small group of consumer brands built on subtraction. Here's what exists, what doesn't yet, and why."
+>
+  <article class="container">
+    <header class="page-head">
+      <span class="meta-strip">The Crux Co · Updated August 2026</span>
+      <h1>Three things. One of them exists.</h1>
+      <p>
+        This page is here so you can see the whole plan, including the parts that aren't real yet.
+        We'd rather tell you what's missing than let a homepage imply we're bigger than we are.
+      </p>
+    </header>
+
+    <div class="prose">
+      <h2>The idea</h2>
+      <p>
+        Every category we're interested in has the same problem: too much of everything. Too many
+        stories, too many ingredients, too many options, too many pages. The companies in those
+        categories grow by adding, because adding is what their business models reward.
+      </p>
+      <p>
+        We're trying the other thing. Each Crux business starts by deciding what to leave out, and
+        then publishes the decision so you can argue with it. That's the whole method, and it's the
+        only thing the three businesses have in common.
+      </p>
+
+      <h2>What we're building</h2>
+    </div>
+
+    <div class="brand-rows" style="margin: 8px 0 40px;">
+      {BRANDS.map((b) => (
+        <div class="brand-row">
+          <div class="brand-row__id">
+            <div class="brand-row__name">
+              <span class="brand-row__dot" style={`background:${b.accent}`} aria-hidden="true"></span>
+              {b.name}
+            </div>
+            <span class={`brand-row__status brand-row__status--${b.status}`}>{b.statusLabel}</span>
+          </div>
+          <div class="brand-row__desc">
+            <p>{b.blurb}</p>
+            <p class="brand-row__cut">{b.cut}</p>
+          </div>
+          <dl class="brand-row__facts">
+            {b.facts.map((f) => (
+              <div><dt>{f.k}</dt><dd>{f.v}</dd></div>
+            ))}
+          </dl>
+        </div>
+      ))}
+    </div>
+
+    <div class="prose">
+      <h2>Why the food brand won't be called Crux</h2>
+      <p>
+        When it launches, the food business will have its own name. Two reasons. Food is judged
+        directly — nobody orders lunch from a parent company — and a name that works for a guide
+        about semiconductors does not make anyone hungry. More importantly, one food-safety incident
+        would contaminate every other brand sharing the name. Keeping it separate costs us some
+        marketing leverage and buys real protection.
+      </p>
+
+      <h2>Why they're not launching together</h2>
+      <p>
+        Because we can't afford it, and pretending otherwise would be the first violation of our own
+        standard. A food business needs capital and daily attention that a one-person company doesn't
+        have yet. So the order is: writing first, because it costs nothing and builds the only asset
+        that makes the others cheaper to launch. Then products. Then food, and only in a form that
+        doesn't require signing a lease.
+      </p>
+      <p>
+        If the first one doesn't work, the others don't happen. We'd rather say that now than explain
+        it later.
+      </p>
+
+      <h2>What we're not doing</h2>
+      <p>
+        No membership programme spanning all three. No loyalty points. No bundle of a guide and a
+        meal. No app. These come up every time someone hears the word "ecosystem," and none of them
+        solve a problem a customer actually has.
+      </p>
+
+      <h2>Who runs it</h2>
+      <p>
+        One person, in India. Not a team, not a studio, not a venture. If you want to know when
+        something changes, the <a href="/subscribe/">email list</a> is where it gets announced first,
+        and usually only.
+      </p>
+
+      <hr />
+      <p class="meta-strip">
+        Everything above is subject to <a href="/standards/">the standard</a>.
+      </p>
+    </div>
+  </article>
+</Base>

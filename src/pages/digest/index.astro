@@ -10,12 +10,19 @@ const fmtDate = (d: Date) => new Intl.DateTimeFormat('en-IN', {
   day: 'numeric', month: 'long', year: 'numeric'
 }).format(d);
 ---
-<Base title="Digest archive" description="Every daily digest from TheCruxCo.">
+<Base
+  title="Digest archive"
+  description="The complete archive of The Crux daily news digest, published May to July 2026. No longer updated."
+>
   <section class="container">
-    <header style="padding-top:32px;">
-      <span class="kicker">Archive</span>
-      <h1>Every day, the crux.</h1>
-      <p style="color:var(--muted);">{digests.length} digests and counting. Pick a day, get caught up in ten minutes.</p>
+    <header class="page-head">
+      <span class="meta-strip">Archive · Closed</span>
+      <h1>The daily digest, May to July 2026.</h1>
+      <p>
+        {digests.length} editions. We stopped publishing on 2 July 2026 — the ad-funded model was
+        never going to work, and we'd rather close something than let it rot.
+        <a href="/about/">Here's the longer version</a>. Everything below stays up and stays free.
+      </p>
     </header>
 
     <ul class="archive-list">
@@ -28,7 +35,7 @@ const fmtDate = (d: Date) => new Intl.DateTimeFormat('en-IN', {
               <div class="archive-card__date">
                 <span class="archive-card__day">{fmtDay(d.data.date)}</span>
                 <span class="archive-card__full">{fmtDate(d.data.date)}</span>
-                {i === 0 && <span class="archive-card__badge">Latest</span>}
+                {i === 0 && <span class="archive-card__badge">Final edition</span>}
               </div>
               <div class="archive-card__body">
                 {lead && <p class="archive-card__lead">{lead}</p>}

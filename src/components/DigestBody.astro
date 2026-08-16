@@ -2,7 +2,6 @@
 // Shared digest renderer — used by the homepage and digest permalink pages.
 // Includes: "at a glance" lead strip, categories, per-category share row,
 // mid-digest ad slot, and the end-of-digest "caught up" retention card.
-import AdSlot from './AdSlot.astro';
 import { SITE } from '../config/site';
 
 export interface Props {
@@ -68,7 +67,6 @@ const glance = categories.slice(0, 5).map((c) => ({
       <button class="share-btn" data-share="x" type="button" aria-label="Share on X">X</button>
       <button class="share-btn" data-share="copy" type="button" aria-label="Copy link">Copy link</button>
     </div>
-    {ci === 4 && <AdSlot size="rectangle" />}
   </section>
 ))}
 
