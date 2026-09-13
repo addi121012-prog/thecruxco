@@ -1,0 +1,126 @@
+---
+import Base from './Base.astro';
+import Newsletter from '../components/Newsletter.astro';
+import WhatsNext from '../components/WhatsNext.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import AffiliateDisclosure from '../components/AffiliateDisclosure.astro';
+import Faqs from '../components/Faqs.astro';
+import { SITE } from '../config/site';
+import type { Category } from '../config/categories';
+
+export interface Props {
+  data: any;
+  category: Category;
+  slug: string;
+  readingTime?: number;
+  relatedReviews?: { slug: string; title: string; verdict: string; pickName: string }[];
+  readNext?: { slug: string; title: string; excerpt: string }[];
+}
+const { data, category, slug, readingTime, relatedReviews = [], readNext = [] } = Astro.props;
+
+const displayDate = data.updatedDate ?? data.pubDate;
+const dateLabel = data.updatedDate ? 'Updated' : 'Published';
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+const canonical = `${SITE.url}/guides/${slug}/`;
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: data.seo?.title ?? data.title,
+  description: data.seo?.description ?? data.excerpt,
+  datePublished: data.pubDate.toISOString(),
+  dateModified: (data.updatedDate ?? data.pubDate).toISOString(),
+  author: { '@type': 'Organization', name: data.author, url: SITE.url },
+  publisher: { '@type': 'Organization', name: SITE.name, url: SITE.url, logo: { '@type': 'ImageObject', url: `${SITE.url}/favicon.svg` } },
+  mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+  about: category.name,
+};
+---
+<Base
+  title={data.seo?.title ?? data.title}
+  description={data.seo?.description ?? data.excerpt}
+  ogType="article"
+  pubDate={data.pubDate}
+  author={data.author}
+  autoSchema={false}
+  noindex={data.draft}
+>
+  <div class="container-wide crumbs-wrap">
+    <Breadcrumbs items={[
+      { name: 'Home', href: '/' },
+      { name: 'Guides', href: '/guides/' },
+      { name: category.name, href: `/topics/${category.slug}/` },
+      { name: data.title },
+    ]} />
+  </div>
+
+  <header class="essay-hero">
+    <div class="essay-hero__inner">
+      <span class="essay-hero__kicker">
+        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+        Guide · {category.name}
+        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+      </span>
+      <h1 class="essay-hero__title">{data.title}</h1>
+      <p class="essay-hero__standfirst">{data.excerpt}</p>
+      <div class="essay-hero__byline">
+        <span class="essay-hero__author">{data.author}</span>
+        <span class="essay-hero__sep" aria-hidden="true">·</span>
+        <time datetime={displayDate.toISOString()}>{dateLabel} {fmt(displayDate)}</time>
+        {readingTime && (<><span class="essay-hero__sep" aria-hidden="true">·</span><span>{readingTime} min read</span></>)}
+      </div>
+    </div>
+  </header>
+
+  <div class="essay-layout">
+    <article class="essay-layout__main">
+      <div class="prose prose--essay">
+        <slot />
+      </div>
+
+      {relatedReviews.length > 0 && (
+        <aside class="linked-review">
+          <span class="linked-review__label">The short answer, if you just want the tool</span>
+          {relatedReviews.map((r) => (
+            <a class="linked-review__card" href={`/reviews/${r.slug}/`}>
+              <span class="linked-review__pick">{r.pickName}</span>
+              <span class="linked-review__verdict">{r.verdict}</span>
+              <span class="linked-review__cta">Read the full verdict <span aria-hidden="true">→</span></span>
+            </a>
+          ))}
+        </aside>
+      )}
+
+      <AffiliateDisclosure variant="inline" />
+
+      <Faqs faqs={data.faqs} />
+
+      <Newsletter size="inline" kicker="Enjoyed this?" heading="One email a week, and we announce new work here first." />
+
+      {readNext.length > 0 && (
+        <nav class="read-next" aria-label="More guides">
+          <h2 class="read-next__title">Read next</h2>
+          <ul class="read-next__list">
+            {readNext.map((r) => (
+              <li>
+                <a class="read-next__card" href={`/guides/${r.slug}/`}>
+                  <span class="read-next__meta">Guide</span>
+                  <span class="read-next__headline">{r.title}</span>
+                  {r.excerpt && <span class="read-next__excerpt">{r.excerpt}</span>}
+                  <span class="read-next__cta">Read it <span aria-hidden="true">→</span></span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+    </article>
+
+    <aside class="essay-layout__sidebar">
+      <div class="sidebar-block"><Newsletter size="sidebar" /></div>
+      <div class="sidebar-block"><WhatsNext variant="sidebar" /></div>
+    </aside>
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+</Base>

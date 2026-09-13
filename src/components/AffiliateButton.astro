@@ -1,0 +1,29 @@
+---
+// Outbound money link. Always rel="sponsored nofollow noopener".
+// If `url` is missing (review still in draft), renders a visible placeholder
+// so the editor knows exactly where to paste the affiliate link.
+export interface Props {
+  url?: string;
+  label?: string;
+  price?: string;
+  block?: boolean;
+}
+const { url, label = 'Check current price', price, block = false } = Astro.props;
+---
+{url ? (
+  <a
+    class={`aff-btn${block ? ' aff-btn--block' : ''}`}
+    href={url}
+    target="_blank"
+    rel="sponsored nofollow noopener"
+  >
+    <span>{label}</span>
+    {price && <span class="aff-btn__price">{price}</span>}
+    <span class="aff-btn__arrow" aria-hidden="true">↗</span>
+  </a>
+) : (
+  <span class={`aff-btn aff-btn--empty${block ? ' aff-btn--block' : ''}`} title="Editor: add the affiliate URL in the review frontmatter">
+    <span>{label}</span>
+    <span class="aff-btn__arrow" aria-hidden="true">＋ link</span>
+  </span>
+)}

@@ -1,0 +1,19 @@
+---
+import Review from '../../layouts/Review.astro';
+import { getCollection } from 'astro:content';
+import { getCategory } from '../../config/categories';
+
+export async function getStaticPaths() {
+  const reviews = await getCollection('reviews');
+  return reviews.map((e) => ({ params: { slug: e.slug }, props: { entry: e } }));
+}
+
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content } = await entry.render();
+const category = getCategory(data.category) ?? { slug: data.category, name: 'Reviews', tagline: '', description: '', intro: '', commercialIntent: 'medium' as const };
+const readingTime = Math.max(2, Math.round(entry.body.trim().split(/\s+/).length / 220));
+---
+<Review data={data} category={category} slug={entry.slug} readingTime={readingTime}>
+  <Content />
+</Review>

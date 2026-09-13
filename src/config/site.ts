@@ -16,14 +16,21 @@ export const SITE = {
 // Beehiiv newsletter integration.
 // Update these when the publication or form changes.
 export const NEWSLETTER = {
-  // Publication URL (Beehiiv's hosted homepage / subscribe page).
   publicationUrl: 'https://thecruxco.beehiiv.com',
-  // Hosted subscribe page fallback (used in nav button + when JS embed fails).
   hostedSubscribeUrl: 'https://thecruxco.beehiiv.com/subscribe',
-  // Embedded form ID (from Beehiiv Subscribe Forms → Embed code).
   embedFormId: '3037a5ca-4c83-45a0-8c8b-9c838f32d3cf',
-  // Sender email shown in transactional copy (informational only).
   senderEmail: 'hello@thecruxco.com',
+} as const;
+
+// Affiliate disclosure — single source of truth. Required by the FTC,
+// by Amazon/most affiliate networks, and by our own standard.
+// Shown on every review and on any guide that carries an outbound money link.
+export const AFFILIATE = {
+  disclosureShort:
+    'Some links on this page are affiliate links. If you buy through one, we may earn a commission — at no extra cost to you. It never decides the verdict. Here is why.',
+  disclosurePage: '/standards/',
+  disclosureLong:
+    'The Crux Co earns affiliate commissions on some outbound links. We only recommend something after judging it on its merits, we name what we rejected and why, and when the honest answer is "buy none of these," we say so. The commission never changes the pick.',
 } as const;
 
 // Brand colours referenced in non-CSS contexts.
@@ -48,8 +55,8 @@ export const BRANDS = [
     blurb:
       'Short, finishable guides and essays on things that are usually explained badly. We tell you the length before you start, and we list every source.',
     cut: 'What we left out: a daily news cycle, a podcast, and anything longer than one sitting.',
-    href: '/essays/',
-    hrefLabel: 'Read the writing',
+    href: '/guides/',
+    hrefLabel: 'Read the guides',
     facts: [
       { k: 'Essays published', v: '3' },
       { k: 'Digests archived', v: '34' },
@@ -60,17 +67,17 @@ export const BRANDS = [
     slug: 'picks',
     name: 'Crux Picks',
     status: 'planned',
-    statusLabel: 'Not yet',
+    statusLabel: 'In progress',
     accent: '#1B4DE4',
     blurb:
-      'We buy the options, test them, and publish one verdict plus everything we rejected. When nothing is worth recommending, we say that instead of picking a winner anyway.',
+      'We try the options, judge them on their merits, and publish one verdict plus everything we rejected. When nothing is worth recommending, we say that instead of picking a winner anyway.',
     cut: "What we'll leave out: a catalogue. We expect to carry fewer than a dozen things.",
-    href: '/company/',
-    hrefLabel: 'What this will be',
+    href: '/reviews/',
+    hrefLabel: 'See the reviews',
     facts: [
-      { k: 'Categories at launch', v: '1' },
-      { k: 'Products tested first', v: '9' },
-      { k: 'Target', v: 'Q1 2027' },
+      { k: 'First category', v: 'AI tools' },
+      { k: 'Verdict per job', v: 'One' },
+      { k: 'Rejections shown', v: 'Always' },
     ],
   },
   {
@@ -91,3 +98,64 @@ export const BRANDS = [
     ],
   },
 ] as const;
+
+// ---------------------------------------------------------------
+// CRUX STUDIO — the productised content service (the money engine).
+// Landing page at /studio. Edit prices/contact here, nowhere else.
+// The page works immediately via email; WhatsApp + lead form appear
+// only once you fill `whatsapp` and `formEndpoint`.
+// ---------------------------------------------------------------
+export const STUDIO = {
+  email: 'hello@thecruxco.com',
+  whatsapp: '',        // digits only incl. country code, e.g. '919812345678' → shows a WhatsApp button
+  formEndpoint: '',    // paste a free Formspree endpoint (https://formspree.io/f/xxxx) → shows a lead form
+  currency: '₹',
+  usdNote: 'Serving global clients too — USD pricing on request.',
+  tiers: [
+    {
+      name: 'Single article',
+      price: '₹2,999',
+      unit: 'per article',
+      best: 'Try before you commit',
+      features: [
+        'One SEO article, up to ~1,200 words',
+        'Keyword + intent research included',
+        'Human-edited, not raw AI output',
+        'One round of revisions',
+        'Delivered in 3 working days',
+      ],
+      highlight: false,
+      cta: 'Start with one',
+    },
+    {
+      name: 'Growth',
+      price: '₹9,999',
+      unit: 'per month',
+      best: 'Most popular',
+      features: [
+        '4 SEO articles a month',
+        'A simple monthly content plan',
+        'Internal-linking + meta done for you',
+        'Two revision rounds per piece',
+        'Priority 2-day turnaround',
+      ],
+      highlight: true,
+      cta: 'Book Growth',
+    },
+    {
+      name: 'Scale',
+      price: '₹18,999',
+      unit: 'per month',
+      best: 'For teams publishing weekly',
+      features: [
+        '8 SEO articles a month',
+        'Keyword strategy + content calendar',
+        'Briefs you can hand to anyone',
+        'Unlimited light revisions',
+        'A dedicated Slack/WhatsApp line',
+      ],
+      highlight: false,
+      cta: 'Book Scale',
+    },
+  ],
+} as const;

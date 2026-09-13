@@ -1,0 +1,33 @@
+---
+export interface Props {
+  columns: string[];
+  rows: { name: string; cells: string[]; url?: string }[];
+  caption?: string;
+}
+const { columns, rows, caption } = Astro.props;
+---
+<figure class="cmp">
+  {caption && <figcaption class="cmp__caption">{caption}</figcaption>}
+  <div class="cmp__scroll">
+    <table class="cmp__table">
+      <thead>
+        <tr>
+          <th scope="col">Tool</th>
+          {columns.map((c) => <th scope="col">{c}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr>
+            <th scope="row" class="cmp__name">
+              {r.url
+                ? <a href={r.url} target="_blank" rel="sponsored nofollow noopener">{r.name}</a>
+                : r.name}
+            </th>
+            {r.cells.map((cell) => <td>{cell}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</figure>

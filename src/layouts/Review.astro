@@ -1,0 +1,156 @@
+---
+import Base from './Base.astro';
+import Newsletter from '../components/Newsletter.astro';
+import WhatsNext from '../components/WhatsNext.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import AffiliateDisclosure from '../components/AffiliateDisclosure.astro';
+import AffiliateButton from '../components/AffiliateButton.astro';
+import ComparisonTable from '../components/ComparisonTable.astro';
+import Faqs from '../components/Faqs.astro';
+import { SITE } from '../config/site';
+import type { Category } from '../config/categories';
+
+export interface Props {
+  data: any;
+  category: Category;
+  slug: string;
+  readingTime?: number;
+}
+const { data, category, slug, readingTime } = Astro.props;
+
+const displayDate = data.updatedDate ?? data.pubDate;
+const dateLabel = data.updatedDate ? 'Updated' : 'Published';
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+const canonical = `${SITE.url}/reviews/${slug}/`;
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: data.seo?.title ?? data.title,
+  description: data.seo?.description ?? data.excerpt,
+  datePublished: data.pubDate.toISOString(),
+  dateModified: (data.updatedDate ?? data.pubDate).toISOString(),
+  author: { '@type': 'Organization', name: data.author, url: SITE.url },
+  publisher: { '@type': 'Organization', name: SITE.name, url: SITE.url, logo: { '@type': 'ImageObject', url: `${SITE.url}/favicon.svg` } },
+  mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+  about: category.name,
+};
+---
+<Base
+  title={data.seo?.title ?? data.title}
+  description={data.seo?.description ?? data.excerpt}
+  ogType="article"
+  pubDate={data.pubDate}
+  author={data.author}
+  autoSchema={false}
+  noindex={data.draft}
+>
+  <div class="container-wide crumbs-wrap">
+    <Breadcrumbs items={[
+      { name: 'Home', href: '/' },
+      { name: 'Reviews', href: '/reviews/' },
+      { name: category.name, href: `/topics/${category.slug}/` },
+      { name: data.title },
+    ]} />
+  </div>
+
+  <header class="essay-hero review-hero">
+    <div class="essay-hero__inner">
+      <span class="essay-hero__kicker">
+        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+        The Cut · {category.name}
+        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
+      </span>
+      <h1 class="essay-hero__title">{data.title}</h1>
+      <p class="essay-hero__standfirst">{data.excerpt}</p>
+      <div class="essay-hero__byline">
+        <span class="essay-hero__author">{data.author}</span>
+        <span class="essay-hero__sep" aria-hidden="true">·</span>
+        <time datetime={displayDate.toISOString()}>{dateLabel} {fmt(displayDate)}</time>
+        {data.lastChecked && (<><span class="essay-hero__sep" aria-hidden="true">·</span><span>Prices checked {data.lastChecked}</span></>)}
+        {readingTime && (<><span class="essay-hero__sep" aria-hidden="true">·</span><span>{readingTime} min read</span></>)}
+      </div>
+    </div>
+  </header>
+
+  <div class="essay-layout">
+    <article class="essay-layout__main">
+
+      <AffiliateDisclosure variant="bar" />
+
+      {/* ---- Verdict box ---- */}
+      <div class="verdict">
+        <div class="verdict__head">
+          <span class="verdict__label">Our pick{data.testedCount ? ` · of ${data.testedCount} tried` : ''}</span>
+          {data.pick.rating && <span class="verdict__rating" aria-label={`${data.pick.rating} out of 5`}>{'★'.repeat(Math.round(data.pick.rating))}<span class="verdict__rating-num">{data.pick.rating.toFixed(1)}</span></span>}
+        </div>
+        <h2 class="verdict__name">{data.pick.name}</h2>
+        <p class="verdict__line">{data.pick.oneLiner}</p>
+        <p class="verdict__summary">{data.verdict}</p>
+        <div class="verdict__cta">
+          <AffiliateButton url={data.pick.url} price={data.pick.price} label={`Try ${data.pick.name}`} block={true} />
+        </div>
+      </div>
+
+      {data.runnersUp && data.runnersUp.length > 0 && (
+        <div class="also-good">
+          <h3 class="also-good__title">Also worth it, for a different person</h3>
+          <ul class="also-good__list">
+            {data.runnersUp.map((r: any) => (
+              <li class="also-good__item">
+                <div class="also-good__id">
+                  <span class="also-good__name">{r.name}</span>
+                  {r.price && <span class="also-good__price">{r.price}</span>}
+                </div>
+                <p class="also-good__line">{r.oneLiner}</p>
+                {r.forWho && <p class="also-good__for"><b>Best if:</b> {r.forWho}</p>}
+                {r.url && <AffiliateButton url={r.url} label={`Try ${r.name}`} />}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ---- The reasoning (markdown body) ---- */}
+      <div class="prose prose--essay review-body">
+        <slot />
+      </div>
+
+      {data.comparison && (
+        <ComparisonTable columns={data.comparison.columns} rows={data.comparison.rows} caption={`How they compare — checked ${data.lastChecked ?? ''}`.trim()} />
+      )}
+
+      {data.rejected && data.rejected.length > 0 && (
+        <section class="rejected">
+          <h2 class="rejected__title">What we rejected — and why</h2>
+          <p class="rejected__intro">This list is the point. Anyone can name a winner; we tell you what we looked at and where each one lost us.</p>
+          <ul class="rejected__list">
+            {data.rejected.map((x: any) => (
+              <li class="rejected__item">
+                <span class="rejected__name">{x.name}</span>
+                <span class="rejected__reason">{x.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Faqs faqs={data.faqs} />
+
+      <Newsletter size="inline" kicker="Before you buy the next thing" heading="One email a week. Usually what we decided not to recommend." />
+    </article>
+
+    <aside class="essay-layout__sidebar">
+      <div class="sidebar-block sidebar-block--pick">
+        <span class="sidebar-pick__label">The short answer</span>
+        <span class="sidebar-pick__name">{data.pick.name}</span>
+        <p class="sidebar-pick__line">{data.pick.oneLiner}</p>
+        <AffiliateButton url={data.pick.url} price={data.pick.price} label={`Try ${data.pick.name}`} block={true} />
+      </div>
+      <div class="sidebar-block"><Newsletter size="sidebar" /></div>
+      <div class="sidebar-block"><WhatsNext variant="sidebar" /></div>
+    </aside>
+  </div>
+
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+</Base>

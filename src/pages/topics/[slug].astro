@@ -1,0 +1,71 @@
+---
+import Base from '../../layouts/Base.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORIES, getCategory } from '../../config/categories';
+
+export async function getStaticPaths() {
+  return CATEGORIES.map((c) => ({ params: { slug: c.slug }, props: { category: c } }));
+}
+const { category } = Astro.props;
+
+const reviews = (await getCollection('reviews', (r) => !r.data.draft && r.data.category === category.slug))
+  .sort((a, b) => +(b.data.updatedDate ?? b.data.pubDate) - +(a.data.updatedDate ?? a.data.pubDate));
+const guides = (await getCollection('articles', (a) => !a.data.draft && a.data.category === category.slug))
+  .sort((a, b) => +(b.data.updatedDate ?? b.data.pubDate) - +(a.data.updatedDate ?? a.data.pubDate));
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
+const isEmpty = reviews.length === 0 && guides.length === 0;
+---
+<Base title={category.name} description={category.description}>
+  <section class="container-wide list-hero">
+    <span class="kicker">Topic</span>
+    <h1 class="list-hero__title">{category.name}</h1>
+    <p class="list-hero__sub">{category.intro}</p>
+  </section>
+
+  <section class="container-wide list-wrap">
+    {isEmpty ? (
+      <div class="empty-state">
+        <p><b>This section is just getting started.</b></p>
+        <p>The first tested verdicts and guides in {category.name.toLowerCase()} are being finished. The email list is where the first one gets announced.</p>
+        <div class="empty-state__form"><Newsletter size="minimal" /></div>
+      </div>
+    ) : (
+      <>
+        {reviews.length > 0 && (
+          <div class="list-sub">
+            <h2 class="list-sub__title">Reviews — the tested verdicts</h2>
+            <ul class="entry-list">
+              {reviews.map((r) => (
+                <li class="entry-card">
+                  <a href={`/reviews/${r.slug}/`}>
+                    <span class="entry-card__meta">Review · {fmt(r.data.updatedDate ?? r.data.pubDate)}</span>
+                    <span class="entry-card__title">{r.data.title}</span>
+                    <span class="entry-card__excerpt">{r.data.excerpt}</span>
+                    <span class="entry-card__pick">Pick: <b>{r.data.pick.name}</b></span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {guides.length > 0 && (
+          <div class="list-sub">
+            <h2 class="list-sub__title">Guides</h2>
+            <ul class="entry-list">
+              {guides.map((g) => (
+                <li class="entry-card">
+                  <a href={`/guides/${g.slug}/`}>
+                    <span class="entry-card__meta">Guide · {fmt(g.data.updatedDate ?? g.data.pubDate)}</span>
+                    <span class="entry-card__title">{g.data.title}</span>
+                    <span class="entry-card__excerpt">{g.data.excerpt}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </>
+    )}
+  </section>
+</Base>

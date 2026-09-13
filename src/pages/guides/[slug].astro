@@ -1,0 +1,31 @@
+---
+import Guide from '../../layouts/Guide.astro';
+import { getCollection } from 'astro:content';
+import { getCategory } from '../../config/categories';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles');
+  const reviews = await getCollection('reviews');
+  return articles.map((e) => ({ params: { slug: e.slug }, props: { entry: e, allArticles: articles, allReviews: reviews } }));
+}
+
+const { entry, allArticles, allReviews } = Astro.props;
+const { data } = entry;
+const { Content } = await entry.render();
+const category = getCategory(data.category) ?? { slug: data.category, name: 'Guides', tagline: '', description: '', intro: '', commercialIntent: 'medium' as const };
+const readingTime = Math.max(2, Math.round(entry.body.trim().split(/\s+/).length / 220));
+
+const relatedReviews = (data.relatedReviews ?? [])
+  .map((rslug: string) => allReviews.find((r: any) => r.slug === rslug))
+  .filter(Boolean)
+  .map((r: any) => ({ slug: r.slug, title: r.data.title, verdict: r.data.verdict, pickName: r.data.pick.name }));
+
+const readNext = allArticles
+  .filter((a: any) => a.slug !== entry.slug && !a.data.draft && a.data.category === data.category)
+  .sort((a: any, b: any) => +b.data.pubDate - +a.data.pubDate)
+  .slice(0, 2)
+  .map((a: any) => ({ slug: a.slug, title: a.data.title, excerpt: a.data.excerpt }));
+---
+<Guide data={data} category={category} slug={entry.slug} readingTime={readingTime} relatedReviews={relatedReviews} readNext={readNext}>
+  <Content />
+</Guide>

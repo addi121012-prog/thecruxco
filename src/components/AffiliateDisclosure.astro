@@ -1,0 +1,14 @@
+---
+import { AFFILIATE } from '../config/site';
+export interface Props { variant?: 'bar' | 'inline'; }
+const { variant = 'bar' } = Astro.props;
+---
+<aside class={`aff-disclosure aff-disclosure--${variant}`} role="note">
+  <svg class="aff-disclosure__icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M12 11v6M12 7v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <p>{AFFILIATE.disclosureShort.replace(' Here is why.', ' ')}
+    <a href={AFFILIATE.disclosurePage}>Here is why.</a>
+  </p>
+</aside>

@@ -12,6 +12,8 @@ export interface Props {
   pubDate?: Date;
   author?: string;
   keywords?: string[];
+  autoSchema?: boolean;
+  noindex?: boolean;
 }
 
 const {
@@ -30,6 +32,8 @@ const {
     'product comparison India',
     'consumer brands India',
   ],
+  autoSchema = true,
+  noindex = false,
 } = Astro.props;
 
 const fullTitle = title === SITE.name ? `${SITE.brand} — ${SITE.tagline}` : `${title} · ${SITE.brand}`;
@@ -46,7 +50,7 @@ const isArticle = ogType === 'article';
   <meta name="description" content={description} />
   <meta name="keywords" content={keywords.join(', ')} />
   <meta name="author" content={author ?? 'TheCruxCo Editorial'} />
-  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
   <link rel="canonical" href={canonical} />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
@@ -69,15 +73,15 @@ const isArticle = ogType === 'article';
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={`${SITE.url}/og-image.png`} />
 
-  {/* JSON-LD structured data */}
-  <StructuredData
+  {/* JSON-LD structured data (pages can opt out with autoSchema={false}) */}
+  {autoSchema && <StructuredData
     type={isArticle ? 'article' : 'website'}
     title={title}
     description={description}
     pubDate={pubDate}
     author={author}
     url={canonical}
-  />
+  />}
 
   {/* FOUC-prevention: set theme attribute before paint based on localStorage. */}
   <script is:inline>
