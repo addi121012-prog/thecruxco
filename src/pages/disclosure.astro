@@ -1,0 +1,31 @@
+---
+import Base from '../layouts/Base.astro';
+import { AFFILIATE } from '../config/site';
+---
+<Base
+  title="Affiliate disclosure"
+  description="How The Crux makes money, and our rule: the commission never decides the verdict."
+>
+  <article class="container">
+    <header class="page-head">
+      <span class="meta-strip">Disclosure</span>
+      <h1>How we make money.</h1>
+    </header>
+    <div class="prose">
+      <p>{AFFILIATE.disclosureLong}</p>
+      <p>
+        In plain terms: some outbound links on our reviews are affiliate links. If you click one and
+        buy something, we may earn a commission, at no extra cost to you. It costs you nothing and it
+        changes nothing about what we recommend.
+      </p>
+      <h2>Our rule</h2>
+      <p>
+        We choose the pick first, on the merits, and add the links afterwards. If the best option in a
+        category has no affiliate program, it still wins. If nothing is worth recommending, we say
+        that instead of pointing you at whatever pays.
+      </p>
+      <h2>Questions</h2>
+      <p>Anything unclear? <a href="/contact/">Get in touch</a>.</p>
+    </div>
+  </article>
+</Base>

@@ -1,6 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Newsletter from '../../components/Newsletter.astro';
 import { getCollection } from 'astro:content';
 import { getCategory } from '../../config/categories';
 
@@ -10,7 +9,7 @@ const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', mont
 ---
 <Base title="Reviews — The Cut" description="One tested verdict per job, plus everything we rejected and why. No sponsored rankings.">
   <section class="container-wide list-hero">
-    <span class="kicker">Crux Picks · The Cut</span>
+    <span class="kicker">The Cut</span>
     <h1 class="list-hero__title">One verdict. And everything we rejected.</h1>
     <p class="list-hero__sub">We try the serious options in a category, name the one worth paying for, and publish the ones that fell short — with the reason. When nothing is worth it, we say that instead.</p>
   </section>
@@ -19,8 +18,7 @@ const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', mont
     {reviews.length === 0 ? (
       <div class="empty-state">
         <p><b>The first reviews are being finished.</b></p>
-        <p>They go live only once every claim, price and link has been checked by a person. If you want to know the moment the first one lands, the email list is where we announce it.</p>
-        <div class="empty-state__form"><Newsletter size="minimal" /></div>
+        <p>They go live only once every claim, price and link has been checked by a person. The first ones are landing now — check back shortly.</p>
       </div>
     ) : (
       <ul class="entry-list">

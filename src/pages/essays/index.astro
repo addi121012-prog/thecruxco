@@ -1,61 +1,27 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-
-const essays = (await getCollection('essays', e => !e.data.draft))
-  .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
-
-const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', {
-  day: 'numeric', month: 'long', year: 'numeric'
-}).format(d);
-
-const readTime = (body: string) => Math.max(1, Math.round(body.trim().split(/\s+/).length / 220));
-
-const [featured, ...rest] = essays;
-const pad = (n: number) => String(n).padStart(2, '0');
+import { SITE } from '../../config/site';
+const posts = (await getCollection('essays', e => !e.data.draft)).sort((a, b) => +b.data.pubDate - +a.data.pubDate);
+const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
 ---
-<Base title="Essays" description="Long-form essays from anonymous correspondents. Slow ideas, written by hand.">
-  <section class="container-wide essays-page">
-    <header class="essays-head">
-      <span class="essay-hero__kicker">
-        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
-        Essays
-        <span class="essay-hero__kicker-rule" aria-hidden="true"></span>
-      </span>
-      <h1 class="essays-head__title">Slow ideas, written by hand.</h1>
-      <p class="essays-head__tag">Weekly long-reads from correspondents who write under pen names — so the argument matters more than the author.</p>
-    </header>
-
-    {featured && (
-      <a class="essay-feature" href={`/essays/${featured.slug}/`}>
-        <div class="essay-feature__body">
-          <span class="essay-feature__badge">Latest essay</span>
-          <h2 class="essay-feature__title">{featured.data.title}</h2>
-          <p class="essay-feature__excerpt">{featured.data.excerpt}</p>
-          <div class="essay-feature__meta">
-            <span class="essay-feature__author">{featured.data.author}</span>
-            <span aria-hidden="true">·</span>
-            <time datetime={featured.data.pubDate.toISOString()}>{fmt(featured.data.pubDate)}</time>
-            <span aria-hidden="true">·</span>
-            <span>{readTime(featured.body)} min read</span>
-          </div>
-          <span class="essay-feature__cta">Read the essay <span aria-hidden="true">→</span></span>
-        </div>
-      </a>
-    )}
-
-    {rest.length > 0 && (
-      <ul class="essay-list">
-        {rest.map((e, i) => (
-          <li class="essay-list__item">
-            <a class="essay-list__link" href={`/essays/${e.slug}/`}>
-              <span class="essay-list__num" aria-hidden="true">{pad(rest.length - i)}</span>
-              <span class="essay-list__body">
-                <span class="essay-list__meta">{e.data.author} · {fmt(e.data.pubDate)} · {readTime(e.body)} min read</span>
-                <span class="essay-list__title">{e.data.title}</span>
-                <span class="essay-list__excerpt">{e.data.excerpt}</span>
-              </span>
-              <span class="essay-list__arrow" aria-hidden="true">→</span>
+<Base title={SITE.briefName} description="Short, sharp takes on what's trending — the story, why it matters, and what to take away.">
+  <section class="container-wide list-hero">
+    <span class="kicker">{SITE.briefName}</span>
+    <h1 class="list-hero__title">What's worth knowing.</h1>
+    <p class="list-hero__sub">Short, sharp takes on what's actually happening — the story, why it matters, and what to take away. No filler, no fifty tabs.</p>
+  </section>
+  <section class="container-wide list-wrap">
+    {posts.length === 0 ? (
+      <div class="empty-state"><p><b>The first pieces are landing shortly.</b></p></div>
+    ) : (
+      <ul class="entry-list">
+        {posts.map((e) => (
+          <li class="entry-card">
+            <a href={`/essays/${e.slug}/`}>
+              <span class="entry-card__meta">{fmt(e.data.pubDate)}</span>
+              <span class="entry-card__title">{e.data.title}</span>
+              <span class="entry-card__excerpt">{e.data.excerpt}</span>
             </a>
           </li>
         ))}

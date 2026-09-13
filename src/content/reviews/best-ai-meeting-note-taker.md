@@ -1,8 +1,8 @@
 ---
 title: "The best AI meeting note-taker for most people"
 category: "ai-tools"
-pubDate: 2026-09-12
-updatedDate: 2026-09-12
+pubDate: 2026-09-14
+updatedDate: 2026-09-14
 author: "The Crux Co"
 excerpt: "We looked at eight AI note-takers on the things that actually decide it — accuracy, the free tier, and whether a bot barges into your call. One wins for most people. The rest are here too, with the reason each lost."
 verdict: "For most people who just want reliable notes without babysitting them, start with Fathom's free plan. It records without limits, the summaries are genuinely usable, and you can upgrade only if you hit a wall."

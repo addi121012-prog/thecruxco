@@ -1,7 +1,5 @@
 ---
 import Base from './Base.astro';
-import Newsletter from '../components/Newsletter.astro';
-import WhatsNext from '../components/WhatsNext.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import AffiliateDisclosure from '../components/AffiliateDisclosure.astro';
 import AffiliateButton from '../components/AffiliateButton.astro';
@@ -137,7 +135,6 @@ const articleSchema = {
 
       <Faqs faqs={data.faqs} />
 
-      <Newsletter size="inline" kicker="Before you buy the next thing" heading="One email a week. Usually what we decided not to recommend." />
     </article>
 
     <aside class="essay-layout__sidebar">
@@ -147,8 +144,11 @@ const articleSchema = {
         <p class="sidebar-pick__line">{data.pick.oneLiner}</p>
         <AffiliateButton url={data.pick.url} price={data.pick.price} label={`Try ${data.pick.name}`} block={true} />
       </div>
-      <div class="sidebar-block"><Newsletter size="sidebar" /></div>
-      <div class="sidebar-block"><WhatsNext variant="sidebar" /></div>
+      <div class="sidebar-block sidebar-block--nav">
+        <span class="sidebar-nav__label">More from The Crux</span>
+        <a href="/reviews/">All reviews →</a>
+        <a href="/essays/">The Brief →</a>
+      </div>
     </aside>
   </div>
 

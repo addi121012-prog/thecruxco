@@ -40,4 +40,3 @@ India has already done the hard part: it built the distillery capacity, the proc
 
 ---
 
-*"The Refiner" is a pen name. Pen names are used by editorial choice; for our reasoning, see <a href="/editorial-standards/">Editorial standards</a>. This essay aims to lay out the strongest case on each side rather than to advocate a position.*

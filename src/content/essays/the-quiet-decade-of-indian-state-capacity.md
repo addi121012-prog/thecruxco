@@ -42,4 +42,3 @@ That is a harder, slower, less photogenic story than the politics. It is also pr
 
 ---
 
-*"The Cartographer" is the pen name of a senior policy researcher in New Delhi. Pen names are used by editorial choice; for our reasoning, see <a href="/editorial-standards/">Editorial standards</a>.*
