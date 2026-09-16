@@ -10,7 +10,7 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "thecrux-crm"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "c882b983-7211-423e-ae75-e5fea5f726ad"
 
 # --- R2 (proposal / attachment storage) ---
 # Create with:  npx wrangler r2 bucket create thecrux-attachments
