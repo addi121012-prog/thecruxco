@@ -1,24 +1,25 @@
-# Cloudflare Pages configuration for The Crux (marketing site + CRM SaaS).
+# Cloudflare Worker (Workers Builds) config for The Crux — marketing site + CRM SaaS.
+# Deploys via `npx wrangler deploy` after `npm run build`.
 name = "thecruxco"
+main = "./dist/_worker.js/index.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "dist"
 
-# --- D1 (relational database) ---
-# Create with:  npx wrangler d1 create thecrux-crm
-# then paste the returned database_id below (and into the Pages dashboard binding).
+# Serve Astro's static output; the worker handles /app and /api.
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+# D1 relational database (bound automatically on deploy).
 [[d1_databases]]
 binding = "DB"
 database_name = "thecrux-crm"
 database_id = "494a3f9a-76c2-4573-ae24-905c98d234c8"
 
-# --- R2 (proposal / attachment storage) ---
-# Create with:  npx wrangler r2 bucket create thecrux-attachments
+# R2 bucket for proposal attachments.
 [[r2_buckets]]
 binding = "ATTACHMENTS"
 bucket_name = "thecrux-attachments"
 
-# Non-secret config. Secrets (AUTH_SECRET, ANTHROPIC_API_KEY, RESEND_API_KEY)
-# are set via `wrangler pages secret put <NAME>` — never committed.
 [vars]
 APP_ENV = "production"
