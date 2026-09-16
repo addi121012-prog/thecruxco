@@ -1,0 +1,23 @@
+---
+import Auth from '../../layouts/Auth.astro';
+export const prerender = false;
+const user = Astro.locals.user;
+if (Astro.locals.workspace) return Astro.redirect('/app');
+---
+<Auth title="Create your workspace">
+  <h1>Create your company workspace</h1>
+  <p class="sub">This is where your team's leads and deals live. You can invite people next.</p>
+  <form id="f">
+    <div class="field"><label for="name">Company name</label><input class="input" id="name" placeholder="e.g. ABC Technologies" required /></div>
+    <div class="formerror" id="err"></div>
+    <button class="btn btn--primary" style="width:100%" type="submit">Create workspace →</button>
+  </form>
+  <script slot="scripts" is:inline>
+    const f = document.getElementById('f'), err = document.getElementById('err');
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault(); err.textContent = ''; const btn = f.querySelector('button'); btn.disabled = true;
+      try { const d = await Crux.api('POST', '/api/workspace/create', { name: name.value }); location.href = d.redirect || '/app'; }
+      catch (ex) { err.textContent = ex.message; btn.disabled = false; }
+    });
+  </script>
+</Auth>

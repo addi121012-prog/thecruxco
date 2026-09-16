@@ -1,0 +1,73 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const canWrite = Astro.locals.member?.role !== 'management';
+const members = await all(db, `SELECT m.user_id, u.name, u.email FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? AND m.status='active' ORDER BY u.name`, [ws.id]);
+const tasks = await all(db, `SELECT t.*, u.name owner_name FROM tasks t LEFT JOIN users u ON u.id=t.owner_id WHERE t.workspace_id=? ORDER BY t.due_at IS NULL, t.due_at ASC, t.created_at DESC LIMIT 800`, [ws.id]);
+const sT = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+const eT = sT + 86400000;
+const open = tasks.filter((t) => t.status === 'open');
+const buckets = {
+  overdue: open.filter((t) => t.due_at && t.due_at < sT),
+  today: open.filter((t) => t.due_at && t.due_at >= sT && t.due_at < eT),
+  upcoming: open.filter((t) => !t.due_at || t.due_at >= eT),
+  done: tasks.filter((t) => t.status === 'done').slice(0, 50),
+};
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(Number(ms))) : '—';
+const SECTIONS = [['overdue', 'Overdue', 'badge--overdue'], ['today', 'Due today', 'badge--medium'], ['upcoming', 'Upcoming', 'badge--low'], ['done', 'Completed', 'badge--qualified']] as const;
+---
+<App title="Tasks" active="tasks">
+  <div class="pagehead"><div><h1>Tasks &amp; follow-ups</h1><p>What needs doing next, so no deal goes quiet.</p></div><div class="spacer"></div>{canWrite && <button class="btn btn--primary" onclick="openTask()">+ New task</button>}</div>
+
+  {open.length === 0 && buckets.done.length === 0 ? (
+    <div class="card"><div class="empty"><h3>No tasks yet</h3><p>Add a follow-up here, or from any lead or opportunity.</p>{canWrite && <button class="btn btn--primary" onclick="openTask()">+ Add your first task</button>}</div></div>
+  ) : SECTIONS.map(([key, label, cls]) => (
+    buckets[key].length > 0 && (
+      <div class="section">
+        <div class="section__head"><span class={'badge ' + cls}>{label}</span><span class="muted">{buckets[key].length}</span></div>
+        <div class="tablewrap"><table class="data"><tbody>
+          {buckets[key].map((t) => (
+            <tr>
+              <td style="width:34px"><input type="checkbox" checked={t.status === 'done'} disabled={!canWrite} onchange={`toggleTask('${t.id}',this.checked)`} /></td>
+              <td class={t.status === 'done' ? 'muted' : 'cellmain'} style={t.status === 'done' ? 'text-decoration:line-through' : ''}>{t.title}
+                {t.entity_type === 'opportunity' && t.entity_id ? <a class="faint" href={`/app/opportunities/${t.entity_id}`} style="margin-left:8px;font-size:12px">· on deal ↗</a> : null}
+              </td>
+              <td style="width:140px">{t.owner_name || '—'}</td>
+              <td class="mono" style="width:90px">{fmt(t.due_at)}</td>
+              <td style="width:90px"><span class={'badge badge--' + t.priority}>{t.priority}</span></td>
+            </tr>
+          ))}
+        </tbody></table></div>
+      </div>
+    )
+  ))}
+
+  <script type="application/json" id="memdata" set:html={JSON.stringify(members)}></script>
+  <div class="modal-backdrop" id="taskModal"><div class="modal"><form id="taskForm">
+    <div class="modal__head"><h3>New task</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+    <div class="modal__body">
+      <div class="field"><label>Task *</label><input class="input" id="t_title" required /></div>
+      <div class="row3"><div class="field"><label>Owner</label><select class="select" id="t_owner"></select></div><div class="field"><label>Due date</label><input class="input" id="t_due" type="date" /></div><div class="field"><label>Priority</label><select class="select" id="t_prio"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div>
+      <div class="field"><label>Notes</label><textarea class="textarea" id="t_notes"></textarea></div>
+      <div class="formerror" id="taskErr"></div>
+    </div>
+    <div class="modal__foot"><button type="button" class="btn" data-close-modal>Cancel</button><button type="submit" class="btn btn--primary">Add task</button></div>
+  </form></div></div>
+
+  <script slot="scripts" is:inline>
+    const MEM = JSON.parse(document.getElementById('memdata').textContent || '[]');
+    document.getElementById('t_owner').innerHTML = MEM.map((m) => `<option value="${m.user_id}">${Crux.esc(m.name || m.email)}</option>`).join('');
+    function openTask() { document.getElementById('taskForm').reset(); document.getElementById('taskErr').textContent = ''; Crux.openModal('taskModal'); }
+    window.openTask = openTask;
+    async function toggleTask(id, done) { try { await Crux.api('PATCH', '/api/tasks/' + id, { status: done ? 'done' : 'open' }); setTimeout(() => location.reload(), 250); } catch (ex) { Crux.toast(ex.message, 'err'); } }
+    window.toggleTask = toggleTask;
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+      try { await Crux.api('POST', '/api/tasks', { title: t_title.value, owner_id: t_owner.value, due_at: t_due.value, priority: t_prio.value, notes: t_notes.value, entity_type: 'general' }); location.reload(); }
+      catch (ex) { document.getElementById('taskErr').textContent = ex.message; btn.disabled = false; }
+    });
+  </script>
+</App>

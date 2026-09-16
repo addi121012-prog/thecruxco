@@ -1,0 +1,34 @@
+---
+import Base from '../layouts/Base.astro';
+const desc = 'Simple, honest pricing for The Crux CRM. 30 days free, then from ₹499/month. No credit card to start.';
+const faqs = [
+  ['Do I need a credit card to start?', 'No. You get full access for 30 days with no card. Add billing only if you decide to keep going.'],
+  ['What happens when the trial ends?', 'Your data stays safe. The workspace goes read-only until you pick a plan — nothing is deleted.'],
+  ['Can I import my existing sales sheet?', 'Yes. Upload a CSV or Excel file, map your columns, and your leads or opportunities are in — usually in a couple of minutes.'],
+  ['Is there a per-user charge?', 'No. Each plan includes a fixed number of seats. Pick the plan that fits your team size.'],
+  ['Can I change plans later?', 'Anytime. Upgrade as your team grows; nothing to re-learn.'],
+];
+---
+<Base title="Pricing" description={desc}>
+  <section class="container-wide">
+    <div class="prod-hero" style="padding-bottom:8px">
+      <span class="kicker">Pricing</span>
+      <h1>Start free. Keep it simple.</h1>
+      <p class="lead">30 days free with full access. Then a flat monthly price for your whole team — no per-seat surprises.</p>
+    </div>
+  </section>
+  <section class="container-wide" style="padding-bottom:20px">
+    <div class="price-grid">
+      <div class="price-card"><h3>Starter</h3><div class="amt">₹499<small>/mo</small></div><div class="seats">Up to 3 users</div><ul><li>Leads &amp; pipeline</li><li>Pre-Sales workspace</li><li>Proposals &amp; attachments</li><li>Tasks &amp; follow-ups</li><li>Excel/CSV import</li></ul><a href="/signup" class="btn-line">Start free</a></div>
+      <div class="price-card pop"><span class="tag">POPULAR</span><h3>Team</h3><div class="amt">₹999<small>/mo</small></div><div class="seats">Up to 10 users</div><ul><li>Everything in Starter</li><li>Roles &amp; permissions</li><li>Reports &amp; analytics</li><li>AI opportunity analysis</li><li>Team invites</li></ul><a href="/signup" class="btn-solid">Start free</a></div>
+      <div class="price-card"><h3>Business</h3><div class="amt">₹1,999<small>/mo</small></div><div class="seats">Up to 25 users</div><ul><li>Everything in Team</li><li>25 seats for larger teams</li><li>Priority support</li></ul><a href="/signup" class="btn-line">Start free</a></div>
+    </div>
+  </section>
+  <section class="container-wide prod-section">
+    <div class="prod-section__head"><h2>Questions, answered</h2></div>
+    <div style="max-width:720px;margin:0 auto">
+      {faqs.map(([q, a]) => (<div style="border-bottom:1px solid var(--rule);padding:16px 0"><b style="display:block;margin-bottom:6px">{q}</b><p style="margin:0;color:var(--muted)">{a}</p></div>))}
+    </div>
+    <div style="text-align:center;margin-top:32px"><a href="/signup" class="btn-solid">Start your 30-day free trial →</a></div>
+  </section>
+</Base>

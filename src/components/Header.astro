@@ -1,6 +1,5 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
-import { SITE } from '../config/site';
 const path = Astro.url.pathname;
 const isActive = (p: string) => path === p || (p !== '/' && path.startsWith(p));
 ---
@@ -9,10 +8,13 @@ const isActive = (p: string) => path === p || (p !== '/' && path.startsWith(p));
     <a href="/" class="brand">The Crux<span class="dot">.</span></a>
     <div class="header-right">
       <nav class="nav" aria-label="Primary">
-        <a href="/reviews/" class={isActive('/reviews') ? 'active' : ''}>Reviews</a>
-        <a href="/essays/" class={isActive('/essays') ? 'active' : ''}>{SITE.briefName}</a>
+        <a href="/#product">Product</a>
+        <a href="/pricing/" class={isActive('/pricing') ? 'active' : ''}>Pricing</a>
+        <a href="/essays/" class={isActive('/essays') ? 'active' : ''}>Essays</a>
         <a href="/about/" class={isActive('/about') ? 'active' : ''}>About</a>
       </nav>
+      <a href="/login" class="nav-login">Log in</a>
+      <a href="/signup" class="btn-solid btn-solid--sm">Start free</a>
       <ThemeToggle />
     </div>
   </div>

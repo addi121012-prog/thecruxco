@@ -1,0 +1,153 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const canWrite = ['admin', 'sales'].includes(Astro.locals.member?.role);
+const members = await all(db, `SELECT m.user_id, u.name, u.email FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? AND m.status='active' ORDER BY u.name`, [ws.id]);
+const opps = await all(db, `SELECT o.*, u.name owner_name FROM opportunities o LEFT JOIN users u ON u.id=o.owner_id WHERE o.workspace_id=? ORDER BY o.updated_at DESC LIMIT 1000`, [ws.id]);
+const STAGES = [
+  { k: 'qualified', label: 'Qualified' }, { k: 'discovery', label: 'Discovery' }, { k: 'presales', label: 'Pre-Sales' },
+  { k: 'proposal', label: 'Proposal' }, { k: 'negotiation', label: 'Negotiation' }, { k: 'won', label: 'Won' }, { k: 'lost', label: 'Lost' },
+];
+const byStage: any = {}; for (const s of STAGES) byStage[s.k] = [];
+for (const o of opps) (byStage[o.stage] || (byStage[o.stage] = [])).push(o);
+const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(Number(ms))) : '';
+const colTotal = (k: string) => byStage[k].reduce((a: number, o: any) => a + (o.value || 0), 0);
+---
+<App title="Opportunities" active="opportunities">
+  <div class="pagehead">
+    <div><h1>Opportunities</h1><p>Your live pipeline. Drag a card to move a deal along.</p></div>
+    <div class="spacer"></div>
+    <div class="toolbar" style="margin:0">
+      <button class="chip active" id="tabBoard" onclick="setView('board')">Board</button>
+      <button class="chip" id="tabTable" onclick="setView('table')">Table</button>
+      {canWrite && <button class="btn btn--primary" onclick="openOpp()">+ New opportunity</button>}
+    </div>
+  </div>
+
+  <div id="boardView">
+    <div class="kanban">
+      {STAGES.map((s) => (
+        <div class="kcol" data-stage={s.k}>
+          <div class="kcol__head"><span class="stagepill" style={s.k === 'won' ? 'background:var(--ok)' : s.k === 'lost' ? 'background:var(--danger)' : ''}></span>{s.label}<span class="kcol__count">{byStage[s.k].length}</span></div>
+          <div class="kcol__body" data-body={s.k}>
+            {byStage[s.k].map((o: any) => (
+              <div class="kcard" draggable={canWrite ? 'true' : 'false'} data-id={o.id} data-stage={o.stage}>
+                <a class="kcard__title" href={`/app/opportunities/${o.id}`}>{o.name}</a>
+                <div class="faint" style="font-size:12px">{o.company_name || ''}</div>
+                <div class="kcard__meta">
+                  <span class="kcard__val">{money(o.value || 0)}</span>
+                  <span>{o.probability || 0}%</span>
+                  {o.owner_name ? <span>· {o.owner_name}</span> : null}
+                  {o.follow_up_at ? <span>· ⏰ {fmt(o.follow_up_at)}</span> : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div id="tableView" style="display:none">
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Opportunity</th><th>Stage</th><th>Value</th><th>Prob.</th><th>Owner</th><th>Close</th><th>Pre-Sales</th></tr></thead>
+      <tbody>
+        {opps.map((o) => (
+          <tr class="rowlink" onclick={`location.href='/app/opportunities/${o.id}'`}>
+            <td class="cellmain">{o.name}<div class="faint">{o.company_name}</div></td>
+            <td><span class={'badge' + (o.stage === 'won' ? ' badge--won' : o.stage === 'lost' ? ' badge--lost' : '')}>{(STAGES.find((s) => s.k === o.stage) || {}).label || o.stage}</span></td>
+            <td class="mono">{money(o.value || 0)}</td>
+            <td class="mono">{o.probability || 0}%</td>
+            <td>{o.owner_name || '—'}</td>
+            <td class="mono">{fmt(o.expected_close) || '—'}</td>
+            <td>{o.presales_status && o.presales_status !== 'none' ? <span class="badge">{o.presales_status}</span> : '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table></div>
+    {opps.length === 0 && <div class="card"><div class="empty"><h3>No opportunities yet</h3><p>Convert a lead, import a sheet, or add one directly.</p>{canWrite && <button class="btn btn--primary" onclick="openOpp()">+ New opportunity</button>}</div></div>}
+  </div>
+
+  <script type="application/json" id="memdata" set:html={JSON.stringify(members)}></script>
+
+  <div class="modal-backdrop" id="oppModal">
+    <div class="modal"><form id="oppForm">
+      <div class="modal__head"><h3>New opportunity</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+      <div class="modal__body">
+        <div class="row2">
+          <div class="field"><label>Opportunity name *</label><input class="input" id="o_name" required /></div>
+          <div class="field"><label>Company</label><input class="input" id="o_company" /></div>
+        </div>
+        <div class="row3">
+          <div class="field"><label>Deal value (₹)</label><input class="input" id="o_value" type="number" min="0" value="0" /></div>
+          <div class="field"><label>Probability (%)</label><input class="input" id="o_prob" type="number" min="0" max="100" value="20" /></div>
+          <div class="field"><label>Expected close</label><input class="input" id="o_close" type="date" /></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Owner</label><select class="select" id="o_owner"></select></div>
+          <div class="field"><label>Stage</label><select class="select" id="o_stage"><option value="qualified">Qualified</option><option value="discovery">Discovery</option><option value="presales">Pre-Sales</option><option value="proposal">Proposal</option><option value="negotiation">Negotiation</option></select></div>
+        </div>
+        <div class="field"><label>Customer requirements</label><textarea class="textarea" id="o_req"></textarea></div>
+        <div class="row2">
+          <div class="field"><label>Next action</label><input class="input" id="o_next" /></div>
+          <div class="field"><label>Follow-up date</label><input class="input" id="o_follow" type="date" /></div>
+        </div>
+        <div class="formerror" id="oppErr"></div>
+      </div>
+      <div class="modal__foot"><button type="button" class="btn" data-close-modal>Cancel</button><button type="submit" class="btn btn--primary">Create opportunity</button></div>
+    </form></div>
+  </div>
+
+  <script slot="scripts" is:inline>
+    const MEM = JSON.parse(document.getElementById('memdata').textContent || '[]');
+    document.getElementById('o_owner').innerHTML = MEM.map((m) => `<option value="${m.user_id}">${Crux.esc(m.name || m.email)}</option>`).join('');
+    function setView(v) {
+      document.getElementById('boardView').style.display = v === 'board' ? '' : 'none';
+      document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
+      document.getElementById('tabBoard').classList.toggle('active', v === 'board');
+      document.getElementById('tabTable').classList.toggle('active', v === 'table');
+      try { localStorage.setItem('crux_oppview', v); } catch (e) {}
+    }
+    window.setView = setView;
+    try { const v = localStorage.getItem('crux_oppview'); if (v === 'table') setView('table'); } catch (e) {}
+    function openOpp() { document.getElementById('oppForm').reset(); document.getElementById('o_prob').value = 20; Crux.openModal('oppModal'); }
+    window.openOpp = openOpp;
+    document.getElementById('oppForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); const err = document.getElementById('oppErr'); err.textContent = '';
+      const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+      try {
+        const d = await Crux.api('POST', '/api/opportunities', { name: o_name.value, company_name: o_company.value, value: o_value.value, probability: o_prob.value, expected_close: o_close.value, owner_id: o_owner.value, stage: o_stage.value, requirements: o_req.value, next_action: o_next.value, follow_up_at: o_follow.value });
+        location.href = '/app/opportunities/' + d.id;
+      } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
+    });
+
+    // Drag and drop
+    let dragId = null;
+    document.querySelectorAll('.kcard[draggable=true]').forEach((c) => {
+      c.addEventListener('dragstart', (e) => { dragId = c.dataset.id; e.dataTransfer.effectAllowed = 'move'; c.style.opacity = '0.5'; });
+      c.addEventListener('dragend', () => { c.style.opacity = ''; });
+    });
+    document.querySelectorAll('.kcol').forEach((col) => {
+      col.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('dragover'); });
+      col.addEventListener('dragleave', () => col.classList.remove('dragover'));
+      col.addEventListener('drop', async (e) => {
+        e.preventDefault(); col.classList.remove('dragover');
+        const stage = col.dataset.stage; const card = document.querySelector(`.kcard[data-id="${dragId}"]`);
+        if (!card || card.dataset.stage === stage) return;
+        const from = card.dataset.stage;
+        let lostReason = '';
+        if (stage === 'lost') { lostReason = prompt('Reason for marking this deal lost? (optional)') || ''; }
+        col.querySelector('.kcol__body').appendChild(card);
+        card.dataset.stage = stage;
+        recount();
+        try { await Crux.api('PATCH', '/api/opportunities/' + dragId, stage === 'lost' ? { stage, lost_reason: lostReason } : { stage }); Crux.toast('Moved to ' + stage, 'ok'); }
+        catch (ex) { Crux.toast(ex.message, 'err'); document.querySelector(`.kcol__body[data-body="${from}"]`).appendChild(card); card.dataset.stage = from; recount(); }
+      });
+    });
+    function recount() { document.querySelectorAll('.kcol').forEach((col) => { col.querySelector('.kcol__count').textContent = col.querySelectorAll('.kcard').length; }); }
+  </script>
+</App>

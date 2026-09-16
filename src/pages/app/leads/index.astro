@@ -1,0 +1,191 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const canWrite = Astro.locals.member?.role !== 'management';
+const status = Astro.url.searchParams.get('status') || '';
+const STATUSES = ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
+const members = await all(db, `SELECT m.user_id, u.name, u.email FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? AND m.status='active' ORDER BY u.name`, [ws.id]);
+let sql = `SELECT l.*, u.name AS owner_name FROM leads l LEFT JOIN users u ON u.id=l.owner_id WHERE l.workspace_id=?`;
+const p: any[] = [ws.id];
+if (STATUSES.includes(status)) { sql += ' AND l.status=?'; p.push(status); }
+sql += ' ORDER BY l.created_at DESC LIMIT 500';
+const leads = await all(db, sql, p);
+const counts: any = {};
+for (const r of await all(db, `SELECT status, COUNT(*) c FROM leads WHERE workspace_id=? GROUP BY status`, [ws.id])) counts[r.status] = r.c;
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(Number(ms))) : '—';
+---
+<App title="Leads" active="leads">
+  <div class="pagehead">
+    <div><h1>Leads</h1><p>Capture every inbound and outbound lead, then convert the good ones.</p></div>
+    <div class="spacer"></div>
+    {canWrite && <button class="btn btn--primary" onclick="openLead()">+ New lead</button>}
+  </div>
+
+  <div class="toolbar">
+    <a class={'chip' + (!status ? ' active' : '')} href="/app/leads">All</a>
+    {STATUSES.map((s) => (<a class={'chip' + (status === s ? ' active' : '')} href={`/app/leads?status=${s}`}>{s[0].toUpperCase() + s.slice(1)} {counts[s] ? `(${counts[s]})` : ''}</a>))}
+  </div>
+
+  {leads.length === 0 ? (
+    <div class="card"><div class="empty">
+      <h3>No leads yet</h3>
+      <p>Add your first lead, or bring your existing sheet in from the Import page.</p>
+      {canWrite && <button class="btn btn--primary" onclick="openLead()">+ Add your first lead</button>}
+      <a class="btn" href="/app/import" style="margin-left:8px">Import from Excel/CSV</a>
+    </div></div>
+  ) : (
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Company</th><th>Contact</th><th>Source</th><th>Owner</th><th>Priority</th><th>Follow-up</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {leads.map((l) => (
+          <tr>
+            <td class="cellmain">{l.company_name}</td>
+            <td>{l.contact_person || '—'}{l.designation ? <span class="faint"><br />{l.designation}</span> : null}</td>
+            <td>{l.source || '—'}</td>
+            <td>{l.owner_name || '—'}</td>
+            <td><span class={'badge badge--' + l.priority}>{l.priority}</span></td>
+            <td class="mono">{fmt(l.next_follow_up)}</td>
+            <td><span class={'badge badge--' + l.status}>{l.status}</span></td>
+            <td style="text-align:right;white-space:nowrap">
+              {canWrite && <button class="btn btn--sm btn--ghost" onclick={`editLead('${l.id}')`}>Edit</button>}
+              {canWrite && l.status !== 'converted' && <button class="btn btn--sm" onclick={`openConvert('${l.id}')`}>Convert →</button>}
+              {l.converted_opportunity_id && <a class="btn btn--sm btn--ghost" href={`/app/opportunities/${l.converted_opportunity_id}`}>View deal</a>}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table></div>
+  )}
+
+  <script type="application/json" id="leaddata" set:html={JSON.stringify(leads)}></script>
+  <script type="application/json" id="memdata" set:html={JSON.stringify(members)}></script>
+
+  <div class="modal-backdrop" id="leadModal">
+    <div class="modal"><form id="leadForm">
+      <div class="modal__head"><h3 id="leadTitle">New lead</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+      <div class="modal__body">
+        <input type="hidden" id="leadId" />
+        <div class="row2">
+          <div class="field"><label>Company name *</label><input class="input" id="l_company" required /></div>
+          <div class="field"><label>Contact person</label><input class="input" id="l_contact" /></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Designation</label><input class="input" id="l_desig" /></div>
+          <div class="field"><label>Lead source</label><input class="input" id="l_source" placeholder="Referral, Website, LinkedIn…" /></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Email</label><input class="input" id="l_email" type="email" /></div>
+          <div class="field"><label>Phone</label><input class="input" id="l_phone" /></div>
+        </div>
+        <div class="field"><label>Requirement</label><textarea class="textarea" id="l_req" placeholder="What are they looking for?"></textarea></div>
+        <div class="row3">
+          <div class="field"><label>Owner</label><select class="select" id="l_owner"></select></div>
+          <div class="field"><label>Priority</label><select class="select" id="l_prio"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+          <div class="field"><label>Status</label><select class="select" id="l_status"><option>new</option><option>contacted</option><option>qualified</option><option>unqualified</option></select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Next follow-up</label><input class="input" id="l_follow" type="date" /></div>
+          <div class="field"></div>
+        </div>
+        <div class="field"><label>Notes</label><textarea class="textarea" id="l_notes"></textarea></div>
+        <div class="formerror" id="leadErr"></div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--danger" id="leadDelete" style="margin-right:auto;display:none" onclick="deleteLead()">Delete</button>
+        <button type="button" class="btn" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn--primary">Save lead</button>
+      </div>
+    </form></div>
+  </div>
+
+  <div class="modal-backdrop" id="convertModal">
+    <div class="modal"><form id="convertForm">
+      <div class="modal__head"><h3>Convert to opportunity</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+      <div class="modal__body">
+        <input type="hidden" id="c_id" />
+        <div class="field"><label>Opportunity name</label><input class="input" id="c_name" required /></div>
+        <div class="field"><label>Deal value (₹)</label><input class="input" id="c_value" type="number" min="0" value="0" /></div>
+        <div class="formerror" id="convErr"></div>
+      </div>
+      <div class="modal__foot"><button type="button" class="btn" data-close-modal>Cancel</button><button type="submit" class="btn btn--primary">Create opportunity →</button></div>
+    </form></div>
+  </div>
+
+  <script slot="scripts" is:inline>
+    const LEADS = JSON.parse(document.getElementById('leaddata').textContent || '[]');
+    const MEM = JSON.parse(document.getElementById('memdata').textContent || '[]');
+    document.getElementById('l_owner').innerHTML = MEM.map((m) => `<option value="${m.user_id}">${Crux.esc(m.name || m.email)}</option>`).join('');
+    function openLead() {
+      const f = document.getElementById('leadForm'); f.reset();
+      document.getElementById('leadId').value = '';
+      document.getElementById('leadTitle').textContent = 'New lead';
+      document.getElementById('leadDelete').style.display = 'none';
+      document.getElementById('l_status').innerHTML = '<option>new</option><option>contacted</option><option>qualified</option><option>unqualified</option>';
+      Crux.openModal('leadModal');
+    }
+    function editLead(id) {
+      const l = LEADS.find((x) => x.id === id); if (!l) return;
+      document.getElementById('leadId').value = l.id;
+      document.getElementById('leadTitle').textContent = 'Edit lead';
+      document.getElementById('l_company').value = l.company_name || '';
+      document.getElementById('l_contact').value = l.contact_person || '';
+      document.getElementById('l_desig').value = l.designation || '';
+      document.getElementById('l_source').value = l.source || '';
+      document.getElementById('l_email').value = l.email || '';
+      document.getElementById('l_phone').value = l.phone || '';
+      document.getElementById('l_req').value = l.requirement || '';
+      document.getElementById('l_owner').value = l.owner_id || '';
+      document.getElementById('l_prio').value = l.priority || 'medium';
+      document.getElementById('l_status').innerHTML = '<option>new</option><option>contacted</option><option>qualified</option><option>unqualified</option><option>converted</option>';
+      document.getElementById('l_status').value = l.status || 'new';
+      document.getElementById('l_follow').value = Crux.dateInput(l.next_follow_up);
+      document.getElementById('l_notes').value = l.notes || '';
+      document.getElementById('leadDelete').style.display = l.status === 'converted' ? 'none' : '';
+      Crux.openModal('leadModal');
+    }
+    window.openLead = openLead; window.editLead = editLead;
+    document.getElementById('leadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('leadErr'); err.textContent = '';
+      const id = document.getElementById('leadId').value;
+      const payload = {
+        company_name: l_company.value, contact_person: l_contact.value, designation: l_desig.value,
+        source: l_source.value, email: l_email.value, phone: l_phone.value, requirement: l_req.value,
+        owner_id: l_owner.value, priority: l_prio.value, status: l_status.value,
+        next_follow_up: l_follow.value, notes: l_notes.value,
+      };
+      const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+      try {
+        if (id) await Crux.api('PATCH', '/api/leads/' + id, payload);
+        else await Crux.api('POST', '/api/leads', payload);
+        location.reload();
+      } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
+    });
+    async function deleteLead() {
+      const id = document.getElementById('leadId').value; if (!id) return;
+      if (!confirm('Delete this lead? This cannot be undone.')) return;
+      try { await Crux.api('DELETE', '/api/leads/' + id); location.reload(); } catch (ex) { Crux.toast(ex.message, 'err'); }
+    }
+    window.deleteLead = deleteLead;
+    function openConvert(id) {
+      const l = LEADS.find((x) => x.id === id);
+      document.getElementById('c_id').value = id;
+      document.getElementById('c_name').value = (l ? l.company_name : '') + ' — deal';
+      document.getElementById('c_value').value = 0;
+      document.getElementById('convErr').textContent = '';
+      Crux.openModal('convertModal');
+    }
+    window.openConvert = openConvert;
+    document.getElementById('convertForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+      try {
+        const d = await Crux.api('POST', '/api/leads/convert', { id: c_id.value, name: c_name.value, value: c_value.value });
+        location.href = '/app/opportunities/' + d.opportunityId;
+      } catch (ex) { document.getElementById('convErr').textContent = ex.message; btn.disabled = false; }
+    });
+  </script>
+</App>

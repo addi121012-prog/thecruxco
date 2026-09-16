@@ -8,3 +8,7 @@ dist/
 .vscode/
 .idea/
 src/content/digests/drafts/
+.wrangler
+.dev.vars
+.dev.vars.local
+dist

@@ -7,7 +7,7 @@ export const SITE = {
   url: 'https://thecruxco.com',
   tagline: 'Cut through the noise.',
   description:
-    'The Crux gives you honest, tested product reviews and sharp takes on what is actually happening — the signal, without the noise.',
+    'The Crux is a simple Sales & Pre-Sales CRM for teams that have outgrown spreadsheets but do not need Salesforce — plus sharp takes and honest reviews.',
   email: 'hello@thecruxco.com',
   location: 'India',
   // The daily-takes section. Rename here to change it everywhere (route stays /essays).

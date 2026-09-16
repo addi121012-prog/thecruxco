@@ -1,0 +1,95 @@
+---
+import App from '../../../layouts/App.astro';
+export const prerender = false;
+const canWrite = ['admin', 'sales'].includes(Astro.locals.member?.role);
+---
+<App title="Import" active="import">
+  <div class="pagehead"><div><h1>Import from Excel / CSV</h1><p>Bring your existing sales sheet in and start using The Crux today.</p></div></div>
+
+  {!canWrite ? (<div class="card"><div class="empty"><h3>Import needs a Sales or Admin role</h3><p>Ask a workspace admin to import, or to change your role.</p></div></div>) : (
+  <div class="card"><div class="card__pad">
+    <div class="field" style="max-width:360px"><label>Import into</label>
+      <select class="select" id="target"><option value="leads">Leads</option><option value="opportunities">Opportunities</option></select>
+    </div>
+    <div class="field"><label>Choose a .csv or .xlsx file</label><input class="input" type="file" id="file" accept=".csv,.xlsx,.xls" /></div>
+    <div id="step2" style="display:none">
+      <hr style="border:0;border-top:1px solid var(--line-2);margin:18px 0" />
+      <h3 style="font-size:14px;margin-bottom:4px">Map your columns</h3>
+      <p class="muted" style="margin-top:0">Match each The Crux field to a column from your file. We guessed where we could.</p>
+      <div id="mapGrid" class="grid" style="grid-template-columns:1fr 1fr;gap:10px 18px;max-width:720px"></div>
+      <h3 style="font-size:14px;margin:18px 0 8px">Preview <span class="faint" id="rowcount"></span></h3>
+      <div class="tablewrap" style="max-height:280px;overflow:auto"><table class="data" id="preview"></table></div>
+      <div class="formerror" id="impErr"></div>
+      <div style="margin-top:14px;display:flex;gap:10px"><button class="btn btn--primary" id="importBtn" onclick="doImport()">Import rows →</button><span id="impStatus" class="muted" style="align-self:center"></span></div>
+    </div>
+  </div></div>
+  )}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" is:inline></script>
+  <script slot="scripts" is:inline>
+    const FIELDS = {
+      leads: [['company_name', 'Company name', true], ['contact_person', 'Contact person'], ['designation', 'Designation'], ['email', 'Email'], ['phone', 'Phone'], ['source', 'Lead source'], ['requirement', 'Requirement'], ['priority', 'Priority'], ['status', 'Status'], ['notes', 'Notes']],
+      opportunities: [['name', 'Opportunity name', true], ['company_name', 'Company'], ['value', 'Deal value'], ['stage', 'Stage'], ['requirements', 'Requirements'], ['source', 'Source'], ['notes', 'Notes']],
+    };
+    let HEADERS = [], ROWS = [];
+    const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    function guess(fieldKey, label) {
+      const cands = [norm(fieldKey), norm(label), norm(label.split(' ')[0])];
+      for (let i = 0; i < HEADERS.length; i++) { const h = norm(HEADERS[i]); if (cands.includes(h) || cands.some((c) => c && (h.includes(c) || c.includes(h)))) return i; }
+      return -1;
+    }
+    document.getElementById('file')?.addEventListener('change', (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = new Uint8Array(ev.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: false });
+          if (!arr.length) { Crux.toast('That file looks empty', 'err'); return; }
+          HEADERS = arr[0].map((h) => String(h).trim());
+          ROWS = arr.slice(1).filter((r) => r.some((c) => String(c).trim() !== '')).map((r) => { const o = {}; HEADERS.forEach((h, i) => o[h] = r[i]); return o; });
+          buildMapping();
+        } catch (ex) { Crux.toast('Could not read the file: ' + ex.message, 'err'); }
+      };
+      reader.readAsArrayBuffer(f);
+    });
+    function buildMapping() {
+      const target = document.getElementById('target').value;
+      const grid = document.getElementById('mapGrid');
+      grid.innerHTML = FIELDS[target].map(([key, label, req]) => {
+        const gi = guess(key, label);
+        const opts = ['<option value="">— skip —</option>'].concat(HEADERS.map((h, i) => `<option value="${i}" ${i === gi ? 'selected' : ''}>${Crux.esc(h)}</option>`)).join('');
+        return `<div class="field" style="margin:0"><label>${label}${req ? ' *' : ''}</label><select class="select map" data-key="${key}">${opts}</select></div>`;
+      }).join('');
+      document.querySelectorAll('.map').forEach((s) => s.addEventListener('change', renderPreview));
+      document.getElementById('rowcount').textContent = '(' + ROWS.length + ' rows)';
+      document.getElementById('step2').style.display = '';
+      renderPreview();
+    }
+    document.getElementById('target')?.addEventListener('change', () => { if (HEADERS.length) buildMapping(); });
+    function currentMap() { const m = {}; document.querySelectorAll('.map').forEach((s) => { if (s.value !== '') m[s.dataset.key] = parseInt(s.value, 10); }); return m; }
+    function mappedRows() { const m = currentMap(); return ROWS.map((r) => { const o = {}; for (const k in m) o[k] = r[HEADERS[m[k]]]; return o; }); }
+    function renderPreview() {
+      const target = document.getElementById('target').value;
+      const keys = FIELDS[target].map((f) => f[0]).filter((k) => currentMap()[k] !== undefined);
+      const rows = mappedRows().slice(0, 5);
+      const th = '<thead><tr>' + keys.map((k) => `<th>${Crux.esc((FIELDS[target].find((f) => f[0] === k) || [])[1] || k)}</th>`).join('') + '</tr></thead>';
+      const tb = '<tbody>' + rows.map((r) => '<tr>' + keys.map((k) => `<td>${Crux.esc(r[k] == null ? '' : r[k])}</td>`).join('') + '</tr>').join('') + '</tbody>';
+      document.getElementById('preview').innerHTML = th + tb;
+    }
+    async function doImport() {
+      const target = document.getElementById('target').value;
+      const reqField = FIELDS[target][0][0];
+      if (currentMap()[reqField] === undefined) { document.getElementById('impErr').textContent = 'Please map the required field (' + FIELDS[target][0][1] + ').'; return; }
+      document.getElementById('impErr').textContent = '';
+      const rows = mappedRows(); const btn = document.getElementById('importBtn'); btn.disabled = true;
+      document.getElementById('impStatus').textContent = 'Importing ' + rows.length + ' rows…';
+      try { const d = await Crux.api('POST', '/api/import/leads', { target, rows });
+        document.getElementById('impStatus').innerHTML = `Imported <strong>${d.inserted}</strong> ${target}${d.skipped ? ` (${d.skipped} skipped — missing required field)` : ''}. <a href="/app/${target}" style="color:var(--accent);font-weight:600">View →</a>`;
+      } catch (ex) { document.getElementById('impErr').textContent = ex.message; btn.disabled = false; }
+    }
+    window.doImport = doImport;
+  </script>
+</App>

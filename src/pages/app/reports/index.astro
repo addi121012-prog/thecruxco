@@ -1,0 +1,66 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all, first } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const wid = Astro.locals.workspace.id;
+const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+const one = async (s: string, p: any[] = []) => (await first(db, s, p)) || {};
+const STAGES = [['qualified', 'Qualified'], ['discovery', 'Discovery'], ['presales', 'Pre-Sales'], ['proposal', 'Proposal'], ['negotiation', 'Negotiation']];
+const stageAgg: any = {}; for (const r of await all(db, `SELECT stage, COUNT(*) c, COALESCE(SUM(value),0) v FROM opportunities WHERE workspace_id=? GROUP BY stage`, [wid])) stageAgg[r.stage] = r;
+const owners = await all(db, `SELECT u.name, COUNT(*) c, COALESCE(SUM(CASE WHEN o.stage NOT IN ('won','lost') THEN o.value ELSE 0 END),0) open_v, COALESCE(SUM(CASE WHEN o.stage='won' THEN o.value ELSE 0 END),0) won_v FROM opportunities o LEFT JOIN users u ON u.id=o.owner_id WHERE o.workspace_id=? GROUP BY o.owner_id ORDER BY open_v DESC`, [wid]);
+const won = await one(`SELECT COUNT(*) c, COALESCE(SUM(value),0) v FROM opportunities WHERE workspace_id=? AND stage='won'`, [wid]);
+const lost = await one(`SELECT COUNT(*) c FROM opportunities WHERE workspace_id=? AND stage='lost'`, [wid]);
+const openAgg = await one(`SELECT COUNT(*) c, COALESCE(SUM(value),0) v, COALESCE(SUM(value*probability/100.0),0) e FROM opportunities WHERE workspace_id=? AND stage NOT IN ('won','lost')`, [wid]);
+const leadsTotal = (await one('SELECT COUNT(*) c FROM leads WHERE workspace_id=?', [wid])).c || 0;
+const leadsConv = (await one(`SELECT COUNT(*) c FROM leads WHERE workspace_id=? AND status='converted'`, [wid])).c || 0;
+const propSent = (await one(`SELECT COUNT(*) c FROM proposals WHERE workspace_id=? AND status IN ('sent','negotiation','accepted','rejected')`, [wid])).c || 0;
+const propAcc = (await one(`SELECT COUNT(*) c FROM proposals WHERE workspace_id=? AND status='accepted'`, [wid])).c || 0;
+const overdue = (await one(`SELECT COUNT(*) c FROM opportunities WHERE workspace_id=? AND stage NOT IN ('won','lost') AND follow_up_at IS NOT NULL AND follow_up_at < ?`, [wid, Date.now()])).c || 0;
+const maxStageV = Math.max(1, ...STAGES.map(([k]) => (stageAgg[k]?.v) || 0));
+const maxOwnerV = Math.max(1, ...owners.map((o) => o.open_v || 0));
+const pct = (a: number, b: number) => b ? Math.round((a / b) * 100) : 0;
+const winRate = (won.c + lost.c) ? Math.round((won.c / (won.c + lost.c)) * 100) : 0;
+const bar = (v: number, max: number, color = 'var(--accent)') => `height:10px;border-radius:5px;background:${color};width:${Math.max(2, Math.round((v / max) * 100))}%`;
+---
+<App title="Reports" active="reports">
+  <div class="pagehead"><div><h1>Reports</h1><p>The numbers that matter — no BI degree required.</p></div></div>
+
+  <div class="grid stats">
+    <div class="stat stat--accent"><div class="stat__label">Open pipeline</div><div class="stat__value">{money(openAgg.v || 0)}</div><div class="stat__sub">{openAgg.c || 0} deals</div></div>
+    <div class="stat"><div class="stat__label">Expected revenue</div><div class="stat__value">{money(openAgg.e || 0)}</div><div class="stat__sub">weighted</div></div>
+    <div class="stat"><div class="stat__label">Revenue won</div><div class="stat__value" style="color:var(--ok)">{money(won.v || 0)}</div><div class="stat__sub">{won.c || 0} deals</div></div>
+    <div class="stat"><div class="stat__label">Win rate</div><div class="stat__value">{winRate}%</div><div class="stat__sub">won of closed</div></div>
+    <div class="stat"><div class="stat__label">Lead conversion</div><div class="stat__value">{pct(leadsConv, leadsTotal)}%</div><div class="stat__sub">{leadsConv}/{leadsTotal} leads</div></div>
+    <div class="stat"><div class="stat__label">Proposal conversion</div><div class="stat__value">{pct(propAcc, propSent)}%</div><div class="stat__sub">{propAcc}/{propSent} accepted</div></div>
+    <div class="stat"><div class="stat__label">Overdue follow-ups</div><div class="stat__value" style={overdue ? 'color:var(--danger)' : ''}>{overdue}</div><div class="stat__sub">open deals</div></div>
+    <div class="stat"><div class="stat__label">Lost</div><div class="stat__value">{lost.c || 0}</div><div class="stat__sub">closed lost</div></div>
+  </div>
+
+  <div class="split section">
+    <div class="card"><div class="card__pad">
+      <h2 style="font-size:14px;margin-bottom:14px">Pipeline by stage</h2>
+      {STAGES.map(([k, label]) => (
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>{label} <span class="faint">({stageAgg[k]?.c || 0})</span></span><span class="mono">{money(stageAgg[k]?.v || 0)}</span></div>
+          <div style={bar(stageAgg[k]?.v || 0, maxStageV)}></div>
+        </div>
+      ))}
+    </div></div>
+    <div class="card"><div class="card__pad">
+      <h2 style="font-size:14px;margin-bottom:14px">Pipeline by salesperson</h2>
+      {owners.length === 0 ? <p class="muted" style="margin:0">No opportunities yet.</p> : owners.map((o) => (
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>{o.name || 'Unassigned'} <span class="faint">({o.c})</span></span><span class="mono">{money(o.open_v || 0)}</span></div>
+          <div style={bar(o.open_v || 0, maxOwnerV)}></div>
+          {o.won_v > 0 && <div class="faint" style="font-size:12px;margin-top:2px">Won: {money(o.won_v)}</div>}
+        </div>
+      ))}
+    </div></div>
+  </div>
+
+  <div class="card section"><div class="card__pad" style="display:flex;gap:26px;flex-wrap:wrap">
+    <div><div class="stat__label">Won vs Lost</div><div style="font-size:20px;font-weight:700;margin-top:6px"><span style="color:var(--ok)">{won.c || 0} won</span> · <span style="color:var(--danger)">{lost.c || 0} lost</span></div></div>
+    <div><div class="stat__label">Opportunity conversion</div><div style="font-size:20px;font-weight:700;margin-top:6px">{winRate}%</div></div>
+  </div></div>
+</App>

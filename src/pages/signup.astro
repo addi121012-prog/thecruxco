@@ -1,0 +1,28 @@
+---
+import Auth from '../layouts/Auth.astro';
+---
+<Auth title="Start free">
+  <h1>Start your 30-day free trial</h1>
+  <p class="sub">No credit card required. Full access.</p>
+  <form id="f">
+    <div class="field"><label for="name">Your name</label><input class="input" id="name" name="name" autocomplete="name" required /></div>
+    <div class="field"><label for="email">Work email</label><input class="input" id="email" name="email" type="email" autocomplete="email" required /></div>
+    <div class="field"><label for="password">Password <span class="hint">— at least 8 characters</span></label><input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="8" required /></div>
+    <div class="formerror" id="err"></div>
+    <button class="btn btn--primary" style="width:100%" type="submit">Create account</button>
+  </form>
+  <div slot="foot" class="authfoot">Already have an account? <a href="/login">Log in →</a></div>
+  <script slot="scripts" is:inline>
+    const f = document.getElementById('f'), err = document.getElementById('err');
+    const params = new URLSearchParams(location.search);
+    const invite = params.get('invite') || '';
+    if (invite) { const e = params.get('email'); if (e) { document.getElementById('email').value = e; document.getElementById('email').readOnly = true; } }
+    f.addEventListener('submit', async (ev) => {
+      ev.preventDefault(); err.textContent = ''; const btn = f.querySelector('button'); btn.disabled = true;
+      try {
+        const d = await Crux.api('POST', '/api/auth/signup', { name: name.value, email: email.value, password: password.value, invite });
+        location.href = d.redirect || '/app';
+      } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
+    });
+  </script>
+</Auth>

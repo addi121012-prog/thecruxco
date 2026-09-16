@@ -3,94 +3,119 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { SITE } from '../config/site';
 
-const brief = (await getCollection('essays', e => !e.data.draft))
-  .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
-const featured = brief[0];
-const restBrief = brief.slice(1, 4);
-
-const reviews = (await getCollection('reviews', r => !r.data.draft))
-  .sort((a, b) => +(b.data.updatedDate ?? b.data.pubDate) - +(a.data.updatedDate ?? a.data.pubDate))
-  .slice(0, 3);
-
+const brief = (await getCollection('essays', (e) => !e.data.draft)).sort((a, b) => +b.data.pubDate - +a.data.pubDate).slice(0, 3);
+const reviews = (await getCollection('reviews', (r) => !r.data.draft)).sort((a, b) => +(b.data.updatedDate ?? b.data.pubDate) - +(a.data.updatedDate ?? a.data.pubDate)).slice(0, 2);
 const fmt = (d: Date) => new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
-const words = featured ? featured.body.trim().split(/\s+/).length : 0;
-const minutes = Math.max(1, Math.round(words / 220));
+const editorial = [
+  ...brief.map((e) => ({ kind: SITE.briefName, title: e.data.title, excerpt: e.data.excerpt, href: `/essays/${e.slug}/`, date: e.data.pubDate })),
+  ...reviews.map((r) => ({ kind: 'Review', title: r.data.title, excerpt: r.data.excerpt, href: `/reviews/${r.slug}/`, date: r.data.updatedDate ?? r.data.pubDate })),
+].slice(0, 3);
+const desc = 'The Crux is a simple Sales & Pre-Sales CRM for teams that have outgrown spreadsheets but don’t need Salesforce. Track leads, manage opportunities, coordinate pre-sales, follow up, and close.';
 ---
-<Base title={SITE.name} description={SITE.description}>
-
-  <!-- Hero -->
-  <section class="container-wide home-hero">
-    <h1 class="home-hero__title">Cut through the noise.</h1>
-    <p class="home-hero__sub">
-      Honest, tested product reviews — the one worth buying, and why. Plus sharp daily takes on what's
-      actually happening. The signal, without the scroll.
-    </p>
-    <div class="home-hero__actions">
-      <a href="/reviews/" class="btn-solid">See the reviews →</a>
-      <a href="/essays/" class="btn-line">Read {SITE.briefName}</a>
+<Base title="The Crux — Simple Sales & Pre-Sales CRM" description={desc}>
+  <!-- HERO -->
+  <section class="container-wide" id="product">
+    <div class="prod-hero">
+      <span class="kicker">Sales &amp; Pre-Sales CRM</span>
+      <h1>Sales shouldn't be this complicated.</h1>
+      <p class="lead">The Crux is a simple Sales &amp; Pre-Sales CRM for teams that have outgrown spreadsheets but don't need Salesforce. Track leads, manage opportunities, coordinate Pre-Sales, follow up, close.</p>
+      <p class="microline">From first lead to closed deal · 30 days free · no credit card</p>
+      <div class="prod-hero__actions">
+        <a href="/signup" class="btn-solid">Start free →</a>
+        <a href="/#how" class="btn-line">See how it works</a>
+      </div>
+    </div>
+    <div class="prod-preview" aria-hidden="true">
+      <div class="prod-preview__bar"><i></i><i></i><i></i><span>The Crux · Pipeline</span></div>
+      <div class="prod-board">
+        <div class="prod-col"><h5>Qualified</h5><div class="prod-deal"><b>Apollo Clinics</b><span>₹4,50,000</span></div><div class="prod-deal"><b>Zenith Mfg</b><span>₹2,10,000</span></div></div>
+        <div class="prod-col"><h5>Discovery</h5><div class="prod-deal"><b>Nova Retail</b><span>₹6,00,000</span></div></div>
+        <div class="prod-col"><h5>Pre-Sales</h5><div class="prod-deal"><b>Meridian Group</b><span>₹9,80,000</span></div></div>
+        <div class="prod-col"><h5>Proposal</h5><div class="prod-deal"><b>Vertex Labs</b><span>₹3,40,000</span></div></div>
+        <div class="prod-col"><h5>Negotiation</h5><div class="prod-deal"><b>Orbit Health</b><span>₹12,00,000</span></div></div>
+      </div>
     </div>
   </section>
 
-  <!-- Reviews -->
-  <section class="container-wide home-section">
-    <div class="sec-head sec-head--kicker">
-      <span class="kicker">Reviews</span>
-      <h2>One verdict per category. No sponsored rankings.</h2>
+  <!-- PROBLEM -->
+  <section class="container-wide prod-section">
+    <div class="prod-section__head"><span class="kicker">The problem</span><h2>Your sales process shouldn't live across five spreadsheets and 200 WhatsApp messages.</h2></div>
+    <div class="prob-grid">
+      <div class="prob-card"><b>Leads scattered across Excel</b><p>Different sheets, different people, no single source of truth.</p></div>
+      <div class="prob-card"><b>Follow-ups forgotten</b><p>The deal goes quiet because nobody remembered to call back.</p></div>
+      <div class="prob-card"><b>Sales info stuck in WhatsApp</b><p>Context lives in someone's chat history — until they leave.</p></div>
+      <div class="prob-card"><b>Pre-Sales gets half the picture</b><p>"Client wants a demo, please take it forward." That's it.</p></div>
+      <div class="prob-card"><b>Proposals hard to track</b><p>Which version went out? When? What did they say?</p></div>
+      <div class="prob-card"><b>Management can't see the real pipeline</b><p>The forecast is a guess built on other guesses.</p></div>
     </div>
-    {reviews.length > 0 ? (
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="container-wide prod-section" id="how">
+    <div class="prod-section__head"><span class="kicker">How The Crux works</span><h2>One clean path from first contact to closed deal.</h2></div>
+    <div class="flow">
+      <div class="flow-step"><div class="n">1</div><b>Lead</b><p>Capture every inbound &amp; outbound lead in one place.</p></div>
+      <div class="flow-step"><div class="n">2</div><b>Opportunity</b><p>Convert the good ones and work a clear pipeline.</p></div>
+      <div class="flow-step"><div class="n">3</div><b>Pre-Sales</b><p>Hand off with structured context, not a one-liner.</p></div>
+      <div class="flow-step"><div class="n">4</div><b>Proposal</b><p>Track every version and where it stands.</p></div>
+      <div class="flow-step"><div class="n">5</div><b>Close</b><p>Follow up on time. Win or learn. Move on.</p></div>
+    </div>
+  </section>
+
+  <!-- PRE-SALES DIFFERENTIATOR -->
+  <section class="container-wide prod-section">
+    <div class="presales-split">
+      <div>
+        <span class="kicker">The differentiator</span>
+        <h2>Sales gets the lead. Pre-Sales gets the context.</h2>
+        <p>Most CRMs stop at the salesperson. The Crux structures the handoff so Pre-Sales knows exactly what the customer needs — before the demo, not after three follow-up calls.</p>
+        <p style="margin-top:14px"><a href="/signup" class="btn-line">Start free →</a></p>
+      </div>
+      <ul class="presales-list">
+        <li>Business &amp; functional requirements</li>
+        <li>Technical needs &amp; integrations</li>
+        <li>Product / module mapping</li>
+        <li>Assumptions &amp; dependencies</li>
+        <li>Open questions</li>
+        <li>Demo requirements</li>
+        <li>Solution notes &amp; proposal inputs</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SIMPLE BY DESIGN -->
+  <section class="container-wide prod-section">
+    <div class="prod-section__head"><span class="kicker">Simple by design</span><h2>Powerful enough to run on. Simple enough to start today.</h2></div>
+    <div class="simple-cols">
+      <div class="simple-card no"><h3>What you won't find</h3><ul><li>Six-week implementation</li><li>A paid CRM consultant</li><li>Feature overload nobody uses</li><li>Twenty-tab dashboards</li></ul></div>
+      <div class="simple-card yes"><h3>What you get</h3><ul><li>Leads → Pipeline → Pre-Sales → Proposals → Follow-ups</li><li>Your team using it the same day</li><li>Import your existing sheet in minutes</li><li>A dashboard a manager actually understands</li></ul></div>
+    </div>
+  </section>
+
+  <!-- PRICING TEASER -->
+  <section class="container-wide prod-section" id="pricing">
+    <div class="price-freebar"><div class="big">30 days free.</div><p>No credit card required. Full access to everything during your trial.</p></div>
+    <div class="price-grid">
+      <div class="price-card"><h3>Starter</h3><div class="amt">₹499<small>/mo</small></div><div class="seats">Up to 3 users</div><ul><li>Full CRM &amp; pipeline</li><li>Pre-Sales workspace</li><li>Proposals &amp; tasks</li><li>Excel/CSV import</li></ul><a href="/signup" class="btn-line">Start free</a></div>
+      <div class="price-card pop"><span class="tag">POPULAR</span><h3>Team</h3><div class="amt">₹999<small>/mo</small></div><div class="seats">Up to 10 users</div><ul><li>Everything in Starter</li><li>Roles: Sales, Pre-Sales, Management</li><li>Reports &amp; pipeline analytics</li><li>AI opportunity analysis</li></ul><a href="/signup" class="btn-solid">Start free</a></div>
+      <div class="price-card"><h3>Business</h3><div class="amt">₹1,999<small>/mo</small></div><div class="seats">Up to 25 users</div><ul><li>Everything in Team</li><li>More seats for growing teams</li><li>Priority support</li></ul><a href="/signup" class="btn-line">Start free</a></div>
+    </div>
+    <p style="text-align:center;margin-top:20px"><a href="/pricing/" class="nav-login">See full pricing &amp; FAQ →</a></p>
+  </section>
+
+  <!-- FROM THE CRUX (editorial preserved) -->
+  {editorial.length > 0 && (
+    <section class="container-wide prod-section">
+      <div class="prod-section__head"><span class="kicker">From The Crux</span><h2>Sharp takes &amp; honest reviews.</h2><p>The Crux started as writing that cuts to the important part. That hasn't gone anywhere.</p></div>
       <div class="home-latest__grid">
-        {reviews.map((r) => (
-          <a class="home-latest__card" href={`/reviews/${r.slug}/`}>
-            <span class="home-latest__tag">Review · {fmt(r.data.updatedDate ?? r.data.pubDate)}</span>
-            <span class="home-latest__title">{r.data.title}</span>
-            <span class="home-latest__excerpt">{r.data.excerpt}</span>
+        {editorial.map((e) => (
+          <a class="home-latest__card" href={e.href}>
+            <span class="home-latest__tag">{e.kind} · {fmt(e.date)}</span>
+            <span class="home-latest__title">{e.title}</span>
+            <span class="home-latest__excerpt">{e.excerpt}</span>
           </a>
         ))}
       </div>
-    ) : (
-      <a class="home-teaser" href="/reviews/">
-        <span class="home-teaser__title">The first tested reviews are landing now.</span>
-        <span class="home-teaser__cta">See what's live →</span>
-      </a>
-    )}
-  </section>
-
-  <!-- The Brief -->
-  <section class="container-wide home-section">
-    <div class="sec-head sec-head--kicker">
-      <span class="kicker">{SITE.briefName}</span>
-      <h2>What's worth knowing today.</h2>
-    </div>
-
-    {featured && (
-      <a href={`/essays/${featured.slug}/`} class="featured-card">
-        <div class="featured-card__body">
-          <div class="featured-card__meta">{minutes} MIN READ · {fmt(featured.data.pubDate).toUpperCase()}</div>
-          <h3 class="featured-card__title">{featured.data.title}</h3>
-          <p class="featured-card__excerpt">{featured.data.excerpt}</p>
-        </div>
-        <span class="featured-card__cta">Read it →</span>
-      </a>
-    )}
-
-    {restBrief.length > 0 && (
-      <ul class="home-more">
-        {restBrief.map((e) => (
-          <li>
-            <a href={`/essays/${e.slug}/`}>
-              <span class="home-more__meta">{fmt(e.data.pubDate)}</span>
-              <span class="home-more__title">{e.data.title}</span>
-            </a>
-          </li>
-        ))}
-        <li>
-          <a href="/essays/">
-            <span class="home-more__meta">Everything</span>
-            <span class="home-more__title">Browse {SITE.briefName} →</span>
-          </a>
-        </li>
-      </ul>
-    )}
-  </section>
-
+    </section>
+  )}
 </Base>

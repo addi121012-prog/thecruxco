@@ -1,0 +1,297 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, first, all } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const role = Astro.locals.member?.role;
+const canSales = ['admin', 'sales'].includes(role);
+const canPre = ['admin', 'sales', 'presales'].includes(role);
+const canWrite = role !== 'management';
+const id = Astro.params.id;
+const opp: any = await first(db, 'SELECT o.*, u.name owner_name FROM opportunities o LEFT JOIN users u ON u.id=o.owner_id WHERE o.id=? AND o.workspace_id=?', [id, ws.id]);
+if (!opp) return Astro.redirect('/app/opportunities');
+const presales: any = await first(db, 'SELECT * FROM presales WHERE opportunity_id=?', [opp.id]);
+const proposals = await all(db, 'SELECT * FROM proposals WHERE opportunity_id=? ORDER BY created_at DESC', [opp.id]);
+const tasks = await all(db, `SELECT t.*, u.name owner_name FROM tasks t LEFT JOIN users u ON u.id=t.owner_id WHERE t.workspace_id=? AND t.entity_type='opportunity' AND t.entity_id=? ORDER BY t.status, t.due_at`, [ws.id, opp.id]);
+const acts = await all(db, `SELECT a.*, u.name user_name FROM activities a LEFT JOIN users u ON u.id=a.user_id WHERE a.workspace_id=? AND a.entity_type='opportunity' AND a.entity_id=? ORDER BY a.created_at DESC LIMIT 40`, [ws.id, opp.id]);
+const members = await all(db, `SELECT m.user_id, u.name, u.email FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? AND m.status='active' ORDER BY u.name`, [ws.id]);
+const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(Number(ms))) : '—';
+const dt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(Number(ms))) : '';
+const stageLabel: any = { qualified: 'Qualified', discovery: 'Discovery', presales: 'Pre-Sales', proposal: 'Proposal', negotiation: 'Negotiation', won: 'Won', lost: 'Lost' };
+const PS_FIELDS = [
+  ['customer_problem', 'Customer problem'], ['business_requirements', 'Business requirements'], ['functional_requirements', 'Functional requirements'],
+  ['technical_requirements', 'Technical requirements'], ['integrations', 'Integrations'], ['module_mapping', 'Product / module mapping'],
+  ['customization', 'Customization requirements'], ['assumptions', 'Assumptions'], ['dependencies', 'Dependencies'],
+  ['open_questions', 'Open questions'], ['demo_requirements', 'Demo requirements'], ['solution_notes', 'Solution notes'],
+];
+---
+<App title={opp.name} active="opportunities">
+  <div style="margin-bottom:6px"><a class="muted" href="/app/opportunities" style="font-size:13px">← Pipeline</a></div>
+  <div class="pagehead">
+    <div>
+      <h1>{opp.name}</h1>
+      <p>{opp.company_name || 'No company set'} · <span class={'badge' + (opp.stage === 'won' ? ' badge--won' : opp.stage === 'lost' ? ' badge--lost' : '')}>{stageLabel[opp.stage]}</span></p>
+    </div>
+    <div class="spacer"></div>
+    {canSales && <button class="btn btn--ghost btn--sm" onclick="openEdit()">Edit</button>}
+    {canSales && (!presales || opp.presales_status === 'none') && <button class="btn btn--sm" onclick="sendPresales()">Send to Pre-Sales →</button>}
+  </div>
+
+  <div class="split">
+    <div>
+      <div class="tabs">
+        <button class="active" data-tab="overview" onclick="tab('overview')">Overview</button>
+        <button data-tab="presales" onclick="tab('presales')">Pre-Sales</button>
+        <button data-tab="proposals" onclick="tab('proposals')">Proposals ({proposals.length})</button>
+        <button data-tab="tasks" onclick="tab('tasks')">Tasks ({tasks.filter((t) => t.status === 'open').length})</button>
+        <button data-tab="activity" onclick="tab('activity')">Activity</button>
+      </div>
+
+      <section data-panel="overview">
+        <div class="card"><div class="card__pad">
+          <h3 style="font-size:14px;margin-bottom:8px">Customer requirements</h3>
+          <p style="white-space:pre-wrap;margin:0 0 16px" class={opp.requirements ? '' : 'muted'}>{opp.requirements || 'No requirements captured yet.'}</p>
+          <h3 style="font-size:14px;margin-bottom:8px">Notes</h3>
+          <p style="white-space:pre-wrap;margin:0" class={opp.notes ? '' : 'muted'}>{opp.notes || 'No notes.'}</p>
+        </div></div>
+      </section>
+
+      <section data-panel="presales" hidden>
+        {!presales ? (
+          <div class="card"><div class="empty">
+            <h3>Not in Pre-Sales yet</h3>
+            <p>Hand this deal to Pre-Sales with structured context — problem, requirements, integrations and open questions — instead of "please take the demo forward."</p>
+            {canSales && <button class="btn btn--primary" onclick="sendPresales()">Send to Pre-Sales →</button>}
+          </div></div>
+        ) : (
+          <div class="card"><div class="card__pad">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <strong style="font-size:14px">Pre-Sales workspace</strong>
+              <select class="select" id="ps_status" style="width:auto" disabled={!canPre}>
+                <option value="requested">Requested</option><option value="in_progress">In progress</option><option value="complete">Complete</option>
+              </select>
+              <div class="spacer"></div>
+              {canPre && <button class="btn btn--primary btn--sm" onclick="savePresales()">Save</button>}
+            </div>
+            {PS_FIELDS.map(([k, label]) => (
+              <div class="field"><label>{label}</label><textarea class="textarea" data-ps={k} disabled={!canPre}>{presales[k] || ''}</textarea></div>
+            ))}
+          </div></div>
+        )}
+      </section>
+
+      <section data-panel="proposals" hidden>
+        <div class="section__head"><h2 style="font-size:14px">Proposals</h2><div class="spacer"></div>{canWrite && <button class="btn btn--sm btn--primary" onclick="openProp()">+ Add proposal</button>}</div>
+        <div id="propList"></div>
+      </section>
+
+      <section data-panel="tasks" hidden>
+        <div class="section__head"><h2 style="font-size:14px">Follow-ups &amp; tasks</h2><div class="spacer"></div>{canWrite && <button class="btn btn--sm btn--primary" onclick="openTask()">+ Add task</button>}</div>
+        <div id="taskList"></div>
+      </section>
+
+      <section data-panel="activity" hidden>
+        <div class="card"><div class="card__pad">
+          {acts.length === 0 ? <p class="muted" style="margin:0">No activity yet.</p> : (
+            <ul class="timeline">{acts.map((a) => (<li><strong style="font-weight:600">{a.detail || a.type}</strong><div class="faint">{a.user_name || 'System'} · {dt(a.created_at)}</div></li>))}</ul>
+          )}
+        </div></div>
+      </section>
+    </div>
+
+    <div>
+      <div class="card"><div class="card__pad">
+        <dl class="kv">
+          <dt>Value</dt><dd class="mono" style="font-weight:650">{money(opp.value || 0)}</dd>
+          <dt>Probability</dt><dd class="mono">{opp.probability || 0}%</dd>
+          <dt>Weighted</dt><dd class="mono">{money((opp.value || 0) * (opp.probability || 0) / 100)}</dd>
+          <dt>Expected close</dt><dd>{fmt(opp.expected_close)}</dd>
+          <dt>Owner</dt><dd>{opp.owner_name || '—'}</dd>
+          <dt>Next action</dt><dd>{opp.next_action || '—'}</dd>
+          <dt>Follow-up</dt><dd>{fmt(opp.follow_up_at)}</dd>
+          <dt>Pre-Sales</dt><dd><span class="badge">{opp.presales_status || 'none'}</span></dd>
+          <dt>Proposal</dt><dd><span class="badge">{opp.proposal_status || 'none'}</span></dd>
+        </dl>
+      </div></div>
+
+      <div class="card" style="margin-top:16px"><div class="card__pad">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><strong style="font-size:14px">✨ Analyze opportunity</strong><div class="spacer"></div><button class="btn btn--sm" id="aiBtn" onclick="analyze()">Run AI analysis</button></div>
+        <div id="aiOut" class="muted" style="font-size:13.5px">Get an instant read on deal health, gaps, risks and the next best action.</div>
+      </div></div>
+    </div>
+  </div>
+
+  <script type="application/json" id="memdata" set:html={JSON.stringify(members)}></script>
+  <script type="application/json" id="oppdata" set:html={JSON.stringify(opp)}></script>
+  <script type="application/json" id="propdata" set:html={JSON.stringify(proposals)}></script>
+  <script type="application/json" id="taskdata" set:html={JSON.stringify(tasks)}></script>
+
+  <!-- Edit opp modal -->
+  <div class="modal-backdrop" id="editModal"><div class="modal"><form id="editForm">
+    <div class="modal__head"><h3>Edit opportunity</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+    <div class="modal__body">
+      <div class="row2"><div class="field"><label>Name *</label><input class="input" id="e_name" required /></div><div class="field"><label>Company</label><input class="input" id="e_company" /></div></div>
+      <div class="row3"><div class="field"><label>Value (₹)</label><input class="input" id="e_value" type="number" min="0" /></div><div class="field"><label>Probability (%)</label><input class="input" id="e_prob" type="number" min="0" max="100" /></div><div class="field"><label>Expected close</label><input class="input" id="e_close" type="date" /></div></div>
+      <div class="row2"><div class="field"><label>Owner</label><select class="select" id="e_owner"></select></div><div class="field"><label>Stage</label><select class="select" id="e_stage"><option value="qualified">Qualified</option><option value="discovery">Discovery</option><option value="presales">Pre-Sales</option><option value="proposal">Proposal</option><option value="negotiation">Negotiation</option><option value="won">Won</option><option value="lost">Lost</option></select></div></div>
+      <div class="row2"><div class="field"><label>Next action</label><input class="input" id="e_next" /></div><div class="field"><label>Follow-up date</label><input class="input" id="e_follow" type="date" /></div></div>
+      <div class="field"><label>Customer requirements</label><textarea class="textarea" id="e_req"></textarea></div>
+      <div class="field"><label>Notes</label><textarea class="textarea" id="e_notes"></textarea></div>
+      <div class="formerror" id="editErr"></div>
+    </div>
+    <div class="modal__foot"><button type="button" class="btn btn--danger" style="margin-right:auto" onclick="delOpp()">Delete</button><button type="button" class="btn" data-close-modal>Cancel</button><button type="submit" class="btn btn--primary">Save</button></div>
+  </form></div></div>
+
+  <!-- Proposal modal -->
+  <div class="modal-backdrop" id="propModal"><div class="modal"><form id="propForm">
+    <div class="modal__head"><h3 id="propTitle">Add proposal</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+    <div class="modal__body">
+      <input type="hidden" id="p_id" />
+      <div class="row2"><div class="field"><label>Proposal name *</label><input class="input" id="p_name" required /></div><div class="field"><label>Version</label><input class="input" id="p_version" value="v1" /></div></div>
+      <div class="row2"><div class="field"><label>Value (₹)</label><input class="input" id="p_value" type="number" min="0" /></div><div class="field"><label>Status</label><select class="select" id="p_status"><option value="draft">Draft</option><option value="internal_review">Internal review</option><option value="sent">Sent</option><option value="negotiation">Negotiation</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select></div></div>
+      <div class="field"><label>Expected response date</label><input class="input" id="p_resp" type="date" /></div>
+      <div class="field"><label>Notes</label><textarea class="textarea" id="p_notes"></textarea></div>
+      <div class="formerror" id="propErr"></div>
+    </div>
+    <div class="modal__foot"><button type="button" class="btn btn--danger" id="propDel" style="margin-right:auto;display:none" onclick="delProp()">Delete</button><button type="button" class="btn" data-close-modal>Cancel</button><button type="submit" class="btn btn--primary">Save</button></div>
+  </form></div></div>
+
+  <!-- Task modal -->
+  <div class="modal-backdrop" id="taskModal"><div class="modal"><form id="taskForm">
+    <div class="modal__head"><h3>Add task</h3><button type="button" class="modal__close" data-close-modal>&times;</button></div>
+    <div class="modal__body">
+      <div class="field"><label>Task *</label><input class="input" id="t_title" required placeholder="e.g. Send revised pricing" /></div>
+      <div class="row3"><div class="field"><label>Owner</label><select class="select" id="t_owner"></select></div><div class="field"><label>Due date</label><input class="input" id="t_due" type="date" /></div><div class="field"><label>Priority</label><select class="select" id="t_prio"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div>
+      <div class="field"><label>Notes</label><textarea class="textarea" id="t_notes"></textarea></div>
+      <div class="formerror" id="taskErr"></div>
+    </div>
+    <div class="modal__foot"><button type="button" class="btn" data-close-modal>Cancel</button><button type="submit" class="btn btn--primary">Add task</button></div>
+  </form></div></div>
+
+  <script slot="scripts" is:inline define:vars={{ OPP: opp, PS_ID: presales ? presales.id : null, PS_STATUS: presales ? presales.status : null, CANWRITE: canWrite }}>
+    const MEM = JSON.parse(document.getElementById('memdata').textContent || '[]');
+    let PROPS = JSON.parse(document.getElementById('propdata').textContent || '[]');
+    let TASKS = JSON.parse(document.getElementById('taskdata').textContent || '[]');
+    const ownerOpts = MEM.map((m) => `<option value="${m.user_id}">${Crux.esc(m.name || m.email)}</option>`).join('');
+    ['e_owner', 't_owner'].forEach((idn) => { const el = document.getElementById(idn); if (el) el.innerHTML = ownerOpts; });
+    if (PS_STATUS) document.getElementById('ps_status').value = PS_STATUS;
+
+    function tab(name) {
+      document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
+      document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+      if (name === 'proposals') renderProps();
+      if (name === 'tasks') renderTasks();
+    }
+    window.tab = tab;
+
+    function openEdit() {
+      e_name.value = OPP.name || ''; e_company.value = OPP.company_name || ''; e_value.value = OPP.value || 0;
+      e_prob.value = OPP.probability || 0; e_close.value = Crux.dateInput(OPP.expected_close); e_owner.value = OPP.owner_id || '';
+      e_stage.value = OPP.stage; e_next.value = OPP.next_action || ''; e_follow.value = Crux.dateInput(OPP.follow_up_at);
+      e_req.value = OPP.requirements || ''; e_notes.value = OPP.notes || ''; editErr.textContent = '';
+      Crux.openModal('editModal');
+    }
+    window.openEdit = openEdit;
+    document.getElementById('editForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); const btn = ev.target.querySelector('button[type=submit]'); btn.disabled = true;
+      try { await Crux.api('PATCH', '/api/opportunities/' + OPP.id, { name: e_name.value, company_name: e_company.value, value: e_value.value, probability: e_prob.value, expected_close: e_close.value, owner_id: e_owner.value, stage: e_stage.value, next_action: e_next.value, follow_up_at: e_follow.value, requirements: e_req.value, notes: e_notes.value }); location.reload(); }
+      catch (ex) { editErr.textContent = ex.message; btn.disabled = false; }
+    });
+    async function delOpp() { if (!confirm('Delete this opportunity and its pre-sales/proposals? This cannot be undone.')) return; try { await Crux.api('DELETE', '/api/opportunities/' + OPP.id); location.href = '/app/opportunities'; } catch (ex) { Crux.toast(ex.message, 'err'); } }
+    window.delOpp = delOpp;
+
+    async function sendPresales() { try { await Crux.api('POST', '/api/presales', { opportunityId: OPP.id }); Crux.toast('Sent to Pre-Sales', 'ok'); location.reload(); } catch (ex) { Crux.toast(ex.message, 'err'); } }
+    window.sendPresales = sendPresales;
+    async function savePresales() {
+      if (!PS_ID) return; const payload = { status: document.getElementById('ps_status').value };
+      document.querySelectorAll('[data-ps]').forEach((t) => { payload[t.dataset.ps] = t.value; });
+      try { await Crux.api('PATCH', '/api/presales/' + PS_ID, payload); Crux.toast('Pre-Sales saved', 'ok'); } catch (ex) { Crux.toast(ex.message, 'err'); }
+    }
+    window.savePresales = savePresales;
+
+    // Proposals
+    function propStatusLabel(s){return {draft:'Draft',internal_review:'Internal review',sent:'Sent',negotiation:'Negotiation',accepted:'Accepted',rejected:'Rejected'}[s]||s;}
+    async function renderProps() {
+      const wrap = document.getElementById('propList');
+      if (!PROPS.length) { wrap.innerHTML = '<div class="card"><div class="empty"><h3>No proposals yet</h3><p>Track each proposal version, its status, and attach the document.</p></div></div>'; return; }
+      wrap.innerHTML = PROPS.map((p) => `
+        <div class="card" style="margin-bottom:12px"><div class="card__pad">
+          <div style="display:flex;align-items:center;gap:10px">
+            <strong>${Crux.esc(p.name)}</strong><span class="badge">${Crux.esc(p.version||'v1')}</span><span class="badge">${propStatusLabel(p.status)}</span>
+            <span class="mono muted">${Crux.money(p.value)}</span>
+            <div class="spacer" style="flex:1"></div>
+            ${CANWRITE ? `<button class="btn btn--sm btn--ghost" onclick="editProp('${p.id}')">Edit</button>` : ''}
+          </div>
+          ${p.notes ? `<p class="muted" style="margin:8px 0 0;white-space:pre-wrap">${Crux.esc(p.notes)}</p>` : ''}
+          <div style="margin-top:10px;border-top:1px solid var(--line-2);padding-top:10px">
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px">ATTACHMENTS</div>
+            <div id="att_${p.id}" class="muted" style="font-size:13px">Loading…</div>
+            ${CANWRITE ? `<label class="btn btn--sm" style="margin-top:8px">Upload file<input type="file" hidden onchange="uploadAtt('${p.id}', this)"></label>` : ''}
+          </div>
+        </div></div>`).join('');
+      PROPS.forEach((p) => loadAtts(p.id));
+    }
+    async function loadAtts(pid) {
+      const el = document.getElementById('att_' + pid); if (!el) return;
+      try { const d = await Crux.api('GET', '/api/attachments?proposal_id=' + pid);
+        el.innerHTML = d.attachments.length ? d.attachments.map((a) => `<div style="display:flex;gap:8px;align-items:center;padding:3px 0"><a href="/api/attachments/${a.id}" target="_blank" style="color:var(--accent);font-weight:600">${Crux.esc(a.filename)}</a><span class="faint">${(a.size/1024).toFixed(0)} KB</span>${CANWRITE ? `<button class="btn btn--sm btn--ghost" onclick="delAtt('${a.id}','${pid}')">✕</button>` : ''}</div>`).join('') : '<span class="faint">No files attached.</span>';
+      } catch (ex) { el.textContent = 'Could not load attachments.'; }
+    }
+    async function uploadAtt(pid, input) {
+      const file = input.files[0]; if (!file) return;
+      const fd = new FormData(); fd.append('file', file); fd.append('proposalId', pid);
+      try { const r = await fetch('/api/attachments', { method: 'POST', body: fd }); const d = await r.json(); if (!r.ok || d.ok === false) throw new Error(d.error || 'Upload failed'); Crux.toast('Uploaded', 'ok'); loadAtts(pid); }
+      catch (ex) { Crux.toast(ex.message, 'err'); } finally { input.value = ''; }
+    }
+    async function delAtt(id, pid) { if (!confirm('Remove this file?')) return; try { await Crux.api('DELETE', '/api/attachments/' + id); loadAtts(pid); } catch (ex) { Crux.toast(ex.message, 'err'); } }
+    window.uploadAtt = uploadAtt; window.delAtt = delAtt;
+    function openProp() { propForm.reset(); p_id.value=''; p_version.value='v1'; document.getElementById('propTitle').textContent='Add proposal'; document.getElementById('propDel').style.display='none'; propErr.textContent=''; Crux.openModal('propModal'); }
+    function editProp(id){ const p=PROPS.find((x)=>x.id===id); if(!p)return; p_id.value=p.id; p_name.value=p.name; p_version.value=p.version||'v1'; p_value.value=p.value||0; p_status.value=p.status; p_resp.value=Crux.dateInput(p.expected_response_at); p_notes.value=p.notes||''; document.getElementById('propTitle').textContent='Edit proposal'; document.getElementById('propDel').style.display=''; propErr.textContent=''; Crux.openModal('propModal'); }
+    window.openProp=openProp; window.editProp=editProp;
+    document.getElementById('propForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); const btn=ev.target.querySelector('button[type=submit]'); btn.disabled=true;
+      const payload={ opportunity_id:OPP.id, name:p_name.value, version:p_version.value, value:p_value.value, status:p_status.value, expected_response_at:p_resp.value, notes:p_notes.value };
+      try { if(p_id.value) await Crux.api('PATCH','/api/proposals/'+p_id.value,payload); else await Crux.api('POST','/api/proposals',payload);
+        const d=await Crux.api('GET','/api/proposals?opportunity_id='+OPP.id); PROPS=d.proposals; renderProps(); Crux.closeModal('propModal'); Crux.toast('Saved','ok'); }
+      catch(ex){ propErr.textContent=ex.message; } finally{ btn.disabled=false; }
+    });
+    async function delProp(){ if(!p_id.value)return; if(!confirm('Delete this proposal and its files?'))return; try{ await Crux.api('DELETE','/api/proposals/'+p_id.value); const d=await Crux.api('GET','/api/proposals?opportunity_id='+OPP.id); PROPS=d.proposals; renderProps(); Crux.closeModal('propModal'); }catch(ex){ Crux.toast(ex.message,'err'); } }
+    window.delProp=delProp;
+
+    // Tasks
+    function renderTasks() {
+      const wrap=document.getElementById('taskList');
+      if(!TASKS.length){ wrap.innerHTML='<div class="card"><div class="empty"><h3>No tasks yet</h3><p>Add a follow-up so this deal never goes quiet.</p></div></div>'; return; }
+      wrap.innerHTML='<div class="tablewrap"><table class="data"><thead><tr><th></th><th>Task</th><th>Owner</th><th>Due</th><th>Priority</th></tr></thead><tbody>'+
+        TASKS.map((t)=>`<tr><td><input type="checkbox" ${t.status==='done'?'checked':''} ${CANWRITE?'':'disabled'} onchange="toggleTask('${t.id}',this.checked)"></td>
+          <td class="${t.status==='done'?'muted':'cellmain'}" style="${t.status==='done'?'text-decoration:line-through':''}">${Crux.esc(t.title)}</td>
+          <td>${Crux.esc(t.owner_name||'—')}</td>
+          <td class="mono">${t.due_at?`<span class="${t.status==='open'&&t.due_at<Date.now()-0?'':''}">${Crux.fmtDate(t.due_at)}</span>`:'—'}</td>
+          <td><span class="badge badge--${t.priority}">${t.priority}</span></td></tr>`).join('')+'</tbody></table></div>';
+    }
+    async function toggleTask(id, done){ try{ await Crux.api('PATCH','/api/tasks/'+id,{status:done?'done':'open'}); const t=TASKS.find((x)=>x.id===id); if(t)t.status=done?'done':'open'; renderTasks(); }catch(ex){ Crux.toast(ex.message,'err'); } }
+    window.toggleTask=toggleTask;
+    function openTask(){ taskForm.reset(); taskErr.textContent=''; Crux.openModal('taskModal'); }
+    window.openTask=openTask;
+    document.getElementById('taskForm').addEventListener('submit', async (ev)=>{
+      ev.preventDefault(); const btn=ev.target.querySelector('button[type=submit]'); btn.disabled=true;
+      try{ await Crux.api('POST','/api/tasks',{ title:t_title.value, owner_id:t_owner.value, due_at:t_due.value, priority:t_prio.value, notes:t_notes.value, entity_type:'opportunity', entity_id:OPP.id });
+        const d=await Crux.api('GET','/api/tasks?entity_type=opportunity&entity_id='+OPP.id); TASKS=d.tasks; renderTasks(); Crux.closeModal('taskModal'); Crux.toast('Task added','ok'); }
+      catch(ex){ taskErr.textContent=ex.message; } finally{ btn.disabled=false; }
+    });
+
+    // AI
+    function mdToHtml(md){ return Crux.esc(md).replace(/^## (.*)$/gm,'<h4 style="margin:12px 0 4px;font-size:13.5px">$1</h4>').replace(/^\s*[-*] (.*)$/gm,'<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>)/g,'<ul style="margin:4px 0 4px 18px">$1</ul>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n{2,}/g,'<br>'); }
+    async function analyze(){
+      const out=document.getElementById('aiOut'), btn=document.getElementById('aiBtn');
+      btn.disabled=true; out.innerHTML='Analyzing…';
+      try{ const d=await Crux.api('POST','/api/ai/analyze',{opportunityId:OPP.id});
+        if(d.configured===false){ out.innerHTML='<span class="muted">'+Crux.esc(d.message)+'</span>'; }
+        else { out.innerHTML=mdToHtml(d.analysis); }
+      }catch(ex){ out.innerHTML='<span style="color:var(--danger)">'+Crux.esc(ex.message)+'</span>'; }
+      finally{ btn.disabled=false; }
+    }
+    window.analyze=analyze;
+  </script>
+</App>

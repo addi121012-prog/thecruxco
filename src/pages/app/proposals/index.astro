@@ -1,0 +1,38 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const status = Astro.url.searchParams.get('status') || '';
+const ST = ['draft', 'internal_review', 'sent', 'negotiation', 'accepted', 'rejected'];
+let sql = `SELECT p.*, o.name opp_name, o.company_name, u.name owner_name FROM proposals p LEFT JOIN opportunities o ON o.id=p.opportunity_id LEFT JOIN users u ON u.id=p.owner_id WHERE p.workspace_id=?`;
+const pr: any[] = [ws.id];
+if (ST.includes(status)) { sql += ' AND p.status=?'; pr.push(status); }
+sql += ' ORDER BY p.created_at DESC LIMIT 500';
+const rows = await all(db, sql, pr);
+const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(Number(ms))) : '—';
+const label: any = { draft: 'Draft', internal_review: 'Internal review', sent: 'Sent', negotiation: 'Negotiation', accepted: 'Accepted', rejected: 'Rejected' };
+---
+<App title="Proposals" active="proposals">
+  <div class="pagehead"><div><h1>Proposals</h1><p>Every proposal, its version and where it stands.</p></div></div>
+  <div class="toolbar">
+    <a class={'chip' + (!status ? ' active' : '')} href="/app/proposals">All</a>
+    {ST.map((s) => (<a class={'chip' + (status === s ? ' active' : '')} href={`/app/proposals?status=${s}`}>{label[s]}</a>))}
+  </div>
+  {rows.length === 0 ? (
+    <div class="card"><div class="empty"><h3>No proposals yet</h3><p>Open an opportunity and add a proposal to start tracking it.</p><a class="btn btn--primary" href="/app/opportunities">Go to pipeline →</a></div></div>
+  ) : (
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Proposal</th><th>Opportunity</th><th>Version</th><th>Value</th><th>Status</th><th>Sent</th><th>Owner</th></tr></thead>
+      <tbody>{rows.map((r) => (
+        <tr class="rowlink" onclick={`location.href='/app/opportunities/${r.opportunity_id}'`}>
+          <td class="cellmain">{r.name}</td><td>{r.opp_name}<div class="faint">{r.company_name}</div></td>
+          <td>{r.version}</td><td class="mono">{money(r.value || 0)}</td>
+          <td><span class="badge">{label[r.status] || r.status}</span></td><td class="mono">{fmt(r.sent_at)}</td><td>{r.owner_name || '—'}</td>
+        </tr>))}
+      </tbody>
+    </table></div>
+  )}
+</App>

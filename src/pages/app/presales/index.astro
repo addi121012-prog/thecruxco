@@ -1,0 +1,29 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all } from '../../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const rows = await all(db, `SELECT p.status ps_status, o.id opp_id, o.name, o.company_name, o.value, o.stage, u.name owner_name
+  FROM presales p JOIN opportunities o ON o.id=p.opportunity_id LEFT JOIN users u ON u.id=o.owner_id
+  WHERE p.workspace_id=? ORDER BY (p.status='complete'), o.updated_at DESC`, [ws.id]);
+const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+const psLabel: any = { requested: 'Requested', in_progress: 'In progress', complete: 'Complete' };
+---
+<App title="Pre-Sales" active="presales">
+  <div class="pagehead"><div><h1>Pre-Sales</h1><p>Every opportunity handed to Pre-Sales — with the context already attached.</p></div></div>
+  {rows.length === 0 ? (
+    <div class="card"><div class="empty"><h3>Nothing in Pre-Sales yet</h3><p>Open any opportunity and hit <strong>Send to Pre-Sales</strong> to create a structured handoff — problem, requirements, integrations, open questions.</p><a class="btn btn--primary" href="/app/opportunities">Go to pipeline →</a></div></div>
+  ) : (
+    <div class="tablewrap"><table class="data">
+      <thead><tr><th>Opportunity</th><th>Company</th><th>Pre-Sales</th><th>Stage</th><th>Value</th><th>Owner</th></tr></thead>
+      <tbody>{rows.map((r) => (
+        <tr class="rowlink" onclick={`location.href='/app/opportunities/${r.opp_id}'`}>
+          <td class="cellmain">{r.name}</td><td>{r.company_name || '—'}</td>
+          <td><span class={'badge badge--' + (r.ps_status === 'complete' ? 'qualified' : 'medium')}>{psLabel[r.ps_status] || r.ps_status}</span></td>
+          <td><span class="badge">{r.stage}</span></td><td class="mono">{money(r.value || 0)}</td><td>{r.owner_name || '—'}</td>
+        </tr>))}
+      </tbody>
+    </table></div>
+  )}
+</App>

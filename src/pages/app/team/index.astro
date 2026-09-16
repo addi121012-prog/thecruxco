@@ -1,0 +1,66 @@
+---
+import App from '../../../layouts/App.astro';
+import { getDB, all, first } from '../../../server/db';
+import { roleLabel } from '../../../server/rbac';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const me = Astro.locals.user;
+const isAdmin = Astro.locals.member?.role === 'admin';
+const members = await all(db, `SELECT m.id, m.role, m.user_id, u.name, u.email FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? AND m.status='active' ORDER BY m.created_at`, [ws.id]);
+const invites = await all(db, `SELECT id, email, role, created_at FROM invites WHERE workspace_id=? AND accepted_at IS NULL ORDER BY created_at DESC`, [ws.id]);
+const used = members.length + invites.length;
+const ROLES = ['admin', 'sales', 'presales', 'management'];
+---
+<App title="Team" active="team">
+  <div class="pagehead"><div><h1>Team</h1><p>Invite your sales &amp; pre-sales people. {ws.seats} seat{ws.seats > 1 ? 's' : ''} on your plan · {used} used.</p></div></div>
+
+  {isAdmin && (
+    <div class="card" style="margin-bottom:18px"><div class="card__pad">
+      <h3 style="font-size:14px;margin-bottom:10px">Invite a teammate</h3>
+      <form id="invForm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="field" style="margin:0;flex:1;min-width:220px"><label>Email</label><input class="input" id="inv_email" type="email" required /></div>
+        <div class="field" style="margin:0"><label>Role</label><select class="select" id="inv_role"><option value="sales">Sales</option><option value="presales">Pre-Sales</option><option value="management">Management</option><option value="admin">Admin</option></select></div>
+        <button class="btn btn--primary" type="submit">Send invite</button>
+      </form>
+      <div class="formerror" id="invErr"></div>
+      <p class="faint" id="invLink" style="font-size:12px;word-break:break-all"></p>
+    </div></div>
+  )}
+
+  <div class="tablewrap"><table class="data">
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
+    <tbody>
+      {members.map((m) => (
+        <tr>
+          <td class="cellmain">{m.name || '—'}{m.user_id === me.id ? <span class="faint"> (you)</span> : null}</td>
+          <td>{m.email}</td>
+          <td>{isAdmin ? (
+            <select class="select" style="width:auto;padding:5px 8px" onchange={`setRole('${m.id}',this.value)`}>
+              {ROLES.map((r) => (<option value={r} selected={m.role === r}>{roleLabel(r)}</option>))}
+            </select>
+          ) : <span class="badge">{roleLabel(m.role)}</span>}</td>
+          <td style="text-align:right">{isAdmin && m.user_id !== me.id && <button class="btn btn--sm btn--danger" onclick={`removeMember('${m.id}')`}>Remove</button>}</td>
+        </tr>
+      ))}
+      {invites.map((iv) => (
+        <tr style="opacity:.7"><td class="cellmain">{iv.email}</td><td class="faint">Invitation pending</td><td><span class="badge">{roleLabel(iv.role)}</span></td><td></td></tr>
+      ))}
+    </tbody>
+  </table></div>
+
+  <script slot="scripts" is:inline>
+    const invForm = document.getElementById('invForm');
+    if (invForm) invForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); document.getElementById('invErr').textContent = '';
+      const btn = e.target.querySelector('button'); btn.disabled = true;
+      try { const d = await Crux.api('POST', '/api/members/invite', { email: document.getElementById('inv_email').value, role: document.getElementById('inv_role').value });
+        document.getElementById('invLink').innerHTML = 'Invite sent. If email isn’t configured yet, share this link: <a href="' + d.inviteLink + '">' + d.inviteLink + '</a>';
+        setTimeout(() => location.reload(), 1500);
+      } catch (ex) { document.getElementById('invErr').textContent = ex.message; btn.disabled = false; }
+    });
+    async function setRole(id, role) { try { await Crux.api('PATCH', '/api/members/' + id, { role }); Crux.toast('Role updated', 'ok'); } catch (ex) { Crux.toast(ex.message, 'err'); setTimeout(() => location.reload(), 800); } }
+    async function removeMember(id) { if (!confirm('Remove this teammate from the workspace?')) return; try { await Crux.api('DELETE', '/api/members/' + id); location.reload(); } catch (ex) { Crux.toast(ex.message, 'err'); } }
+    window.setRole = setRole; window.removeMember = removeMember;
+  </script>
+</App>

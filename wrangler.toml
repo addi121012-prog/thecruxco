@@ -1,0 +1,24 @@
+# Cloudflare Pages configuration for The Crux (marketing site + CRM SaaS).
+name = "thecruxco"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# --- D1 (relational database) ---
+# Create with:  npx wrangler d1 create thecrux-crm
+# then paste the returned database_id below (and into the Pages dashboard binding).
+[[d1_databases]]
+binding = "DB"
+database_name = "thecrux-crm"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# --- R2 (proposal / attachment storage) ---
+# Create with:  npx wrangler r2 bucket create thecrux-attachments
+[[r2_buckets]]
+binding = "ATTACHMENTS"
+bucket_name = "thecrux-attachments"
+
+# Non-secret config. Secrets (AUTH_SECRET, ANTHROPIC_API_KEY, RESEND_API_KEY)
+# are set via `wrangler pages secret put <NAME>` — never committed.
+[vars]
+APP_ENV = "production"

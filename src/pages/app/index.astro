@@ -1,0 +1,89 @@
+---
+import App from '../../layouts/App.astro';
+import { getDB, first, all } from '../../server/db';
+export const prerender = false;
+const db = getDB(Astro.locals);
+const ws = Astro.locals.workspace;
+const wid = ws.id;
+const one = async (sql: string, p: any[] = []) => (await first(db, sql, p)) || {};
+const now = Date.now();
+const startToday = new Date(); startToday.setHours(0, 0, 0, 0); const sT = startToday.getTime();
+const endToday = sT + 86400000;
+
+const leadsTotal = (await one('SELECT COUNT(*) c FROM leads WHERE workspace_id=?', [wid])).c || 0;
+const leadsNew = (await one(`SELECT COUNT(*) c FROM leads WHERE workspace_id=? AND status='new'`, [wid])).c || 0;
+const openOpps = (await one(`SELECT COUNT(*) c, COALESCE(SUM(value),0) v, COALESCE(SUM(value*probability/100.0),0) e FROM opportunities WHERE workspace_id=? AND stage NOT IN ('won','lost')`, [wid]));
+const inPresales = (await one(`SELECT COUNT(*) c FROM opportunities WHERE workspace_id=? AND stage='presales'`, [wid])).c || 0;
+const propsSent = (await one(`SELECT COUNT(*) c FROM proposals WHERE workspace_id=? AND status='sent'`, [wid])).c || 0;
+const won = (await one(`SELECT COUNT(*) c, COALESCE(SUM(value),0) v FROM opportunities WHERE workspace_id=? AND stage='won'`, [wid]));
+const lost = (await one(`SELECT COUNT(*) c FROM opportunities WHERE workspace_id=? AND stage='lost'`, [wid])).c || 0;
+const overdueTasks = (await one(`SELECT COUNT(*) c FROM tasks WHERE workspace_id=? AND status='open' AND due_at IS NOT NULL AND due_at < ?`, [wid, sT])).c || 0;
+const overdueFollow = (await one(`SELECT COUNT(*) c FROM opportunities WHERE workspace_id=? AND stage NOT IN ('won','lost') AND follow_up_at IS NOT NULL AND follow_up_at < ?`, [wid, sT])).c || 0;
+
+const todaysTasks = await all(db, `SELECT t.*, u.name owner_name FROM tasks t LEFT JOIN users u ON u.id=t.owner_id WHERE t.workspace_id=? AND t.status='open' AND ((t.due_at>=? AND t.due_at<?) OR (t.due_at<?)) ORDER BY t.due_at ASC LIMIT 12`, [wid, sT, endToday, sT]);
+const recent = await all(db, `SELECT o.*, u.name owner_name FROM opportunities o LEFT JOIN users u ON u.id=o.owner_id WHERE o.workspace_id=? AND o.stage NOT IN ('won','lost') ORDER BY o.updated_at DESC LIMIT 8`, [wid]);
+const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(new Date(Number(ms))) : '—';
+const stageLabel: any = { qualified: 'Qualified', discovery: 'Discovery', presales: 'Pre-Sales', proposal: 'Proposal', negotiation: 'Negotiation', won: 'Won', lost: 'Lost' };
+const first_name = (Astro.locals.user?.name || '').split(' ')[0];
+---
+<App title="Dashboard" active="dashboard">
+  <div class="pagehead"><div>
+    <h1>{first_name ? `Welcome back, ${first_name}` : 'Dashboard'}</h1>
+    <p>The real state of your pipeline, at a glance.</p>
+  </div></div>
+
+  <div class="grid stats">
+    <a class="stat" href="/app/leads"><div class="stat__label">Total leads</div><div class="stat__value">{leadsTotal}</div><div class="stat__sub">{leadsNew} new</div></a>
+    <a class="stat" href="/app/opportunities"><div class="stat__label">Active opportunities</div><div class="stat__value">{openOpps.c || 0}</div><div class="stat__sub">in the pipeline</div></a>
+    <a class="stat" href="/app/presales"><div class="stat__label">In Pre-Sales</div><div class="stat__value">{inPresales}</div><div class="stat__sub">awaiting solutioning</div></a>
+    <a class="stat" href="/app/proposals"><div class="stat__label">Proposals sent</div><div class="stat__value">{propsSent}</div><div class="stat__sub">awaiting response</div></a>
+    <div class="stat stat--accent"><div class="stat__label">Pipeline value</div><div class="stat__value">{money(openOpps.v || 0)}</div><div class="stat__sub">open deals</div></div>
+    <div class="stat"><div class="stat__label">Expected revenue</div><div class="stat__value">{money(openOpps.e || 0)}</div><div class="stat__sub">weighted by probability</div></div>
+    <div class="stat"><div class="stat__label">Won</div><div class="stat__value" style="color:var(--ok)">{won.c || 0}</div><div class="stat__sub">{money(won.v || 0)}</div></div>
+    <div class="stat"><div class="stat__label">Lost</div><div class="stat__value" style="color:var(--danger)">{lost}</div><div class="stat__sub">closed lost</div></div>
+  </div>
+
+  {(overdueTasks > 0 || overdueFollow > 0) && (
+    <div class="card" style="margin-top:16px;border-color:#f0cfca"><div class="card__pad" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <span class="badge badge--overdue">Needs attention</span>
+      {overdueFollow > 0 && <span><strong>{overdueFollow}</strong> overdue follow-up{overdueFollow > 1 ? 's' : ''} on open deals — <a href="/app/opportunities" style="color:var(--accent);font-weight:600">review →</a></span>}
+      {overdueTasks > 0 && <span><strong>{overdueTasks}</strong> overdue task{overdueTasks > 1 ? 's' : ''} — <a href="/app/tasks" style="color:var(--accent);font-weight:600">review →</a></span>}
+    </div></div>
+  )}
+
+  <div class="split section">
+    <div>
+      <div class="section__head"><h2>Recent opportunities</h2><div class="spacer"></div><a class="muted" href="/app/opportunities" style="font-size:13px">View all →</a></div>
+      {recent.length === 0 ? (
+        <div class="card"><div class="empty"><h3>No opportunities yet</h3><p>Convert a lead or add an opportunity to start building your pipeline.</p><a class="btn btn--primary" href="/app/opportunities">Go to pipeline →</a></div></div>
+      ) : (
+        <div class="tablewrap"><table class="data"><thead><tr><th>Opportunity</th><th>Stage</th><th>Value</th><th>Owner</th></tr></thead><tbody>
+          {recent.map((o) => (
+            <tr class="rowlink" onclick={`location.href='/app/opportunities/${o.id}'`}>
+              <td class="cellmain">{o.name}<div class="faint">{o.company_name}</div></td>
+              <td><span class="badge">{stageLabel[o.stage] || o.stage}</span></td>
+              <td class="mono">{money(o.value || 0)}</td>
+              <td>{o.owner_name || '—'}</td>
+            </tr>
+          ))}
+        </tbody></table></div>
+      )}
+    </div>
+    <div>
+      <div class="section__head"><h2>Today &amp; overdue</h2><div class="spacer"></div><a class="muted" href="/app/tasks" style="font-size:13px">All tasks →</a></div>
+      <div class="card"><div class="card__pad">
+        {todaysTasks.length === 0 ? (<p class="muted" style="margin:0">Nothing due today. You're clear. 🎯</p>) : (
+          <ul class="timeline">
+            {todaysTasks.map((t) => (
+              <li style="display:flex;gap:10px;align-items:flex-start">
+                <span class={'badge ' + (t.due_at && t.due_at < sT ? 'badge--overdue' : 'badge--medium')} style="margin-top:1px">{t.due_at && t.due_at < sT ? 'Overdue' : 'Today'}</span>
+                <span style="flex:1"><strong style="font-weight:600">{t.title}</strong><div class="faint">{t.owner_name || ''} · due {fmt(t.due_at)}</div></span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div></div>
+    </div>
+  </div>
+</App>

@@ -1,0 +1,57 @@
+---
+import App from '../../../layouts/App.astro';
+import { roleLabel } from '../../../server/rbac';
+export const prerender = false;
+const user = Astro.locals.user;
+const ws = Astro.locals.workspace;
+const member = Astro.locals.member;
+const trial = Astro.locals.trial;
+const isAdmin = member?.role === 'admin';
+const PLANS = [
+  { key: 'starter', name: 'Starter', price: '₹499', seats: 3 },
+  { key: 'team', name: 'Team', price: '₹999', seats: 10 },
+  { key: 'business', name: 'Business', price: '₹1,999', seats: 25 },
+];
+const fmt = (ms: any) => ms ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(Number(ms))) : '—';
+---
+<App title="Settings" active="settings">
+  <div class="pagehead"><div><h1>Settings</h1><p>Your account, workspace and plan.</p></div></div>
+
+  <div class="card" style="margin-bottom:18px"><div class="card__pad">
+    <h3 style="font-size:14px;margin-bottom:12px">Your account</h3>
+    <dl class="kv"><dt>Name</dt><dd>{user?.name || '—'}</dd><dt>Email</dt><dd>{user?.email}</dd><dt>Role</dt><dd>{roleLabel(member?.role || '')}</dd><dt>Workspace</dt><dd>{ws?.name}</dd></dl>
+    <div style="margin-top:14px"><a class="btn btn--sm" href="/api/auth/logout">Log out</a></div>
+  </div></div>
+
+  <div class="card" id="billing"><div class="card__pad">
+    <h3 style="font-size:14px;margin-bottom:6px">Plan &amp; billing</h3>
+    {trial?.active
+      ? (<p class="muted">You're on the <strong>{roleLabel(ws.plan) === ws.plan ? ws.plan : ws.plan}</strong> plan · {ws.seats} seats.</p>)
+      : trial?.expired
+        ? (<p style="color:var(--danger)">Your free trial ended on {fmt(trial.endsAt)}. Choose a plan to reactivate your workspace.</p>)
+        : (<p class="muted">You're on the <strong>30-day free trial</strong> — {trial?.daysLeft} days left (ends {fmt(trial?.endsAt)}).</p>)}
+
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px">
+      {PLANS.map((p) => (
+        <div class="card"><div class="card__pad">
+          <div style="font-weight:700">{p.name}</div>
+          <div style="font-size:24px;font-weight:750;margin:4px 0">{p.price}<span class="faint" style="font-size:13px;font-weight:500">/mo</span></div>
+          <div class="faint" style="font-size:13px;margin-bottom:12px">Up to {p.seats} users</div>
+          {isAdmin
+            ? <button class="btn btn--primary btn--sm" style="width:100%" onclick={`activate('${p.key}','${p.name}')`}>{ws.plan === p.key && trial?.active ? 'Current plan' : 'Choose ' + p.name}</button>
+            : <span class="faint" style="font-size:12px">Ask an admin to change the plan</span>}
+        </div></div>
+      ))}
+    </div>
+    <p class="faint" style="font-size:12px;margin-top:14px">Note: online payment isn't wired up yet — activating a plan here doesn't charge anything. It's built so a Razorpay subscription flow can drop in without changing the app.</p>
+  </div></div>
+
+  <script slot="scripts" is:inline>
+    async function activate(plan, name) {
+      if (!confirm(`Activate the ${name} plan? (No payment is taken — billing isn't live yet.)`)) return;
+      try { await Crux.api('POST', '/api/workspace/plan', { plan }); Crux.toast(name + ' plan activated', 'ok'); setTimeout(() => location.reload(), 800); }
+      catch (ex) { Crux.toast(ex.message, 'err'); }
+    }
+    window.activate = activate;
+  </script>
+</App>
