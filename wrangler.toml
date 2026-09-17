@@ -16,10 +16,6 @@ binding = "DB"
 database_name = "thecrux-crm"
 database_id = "494a3f9a-76c2-4573-ae24-905c98d234c8"
 
-# R2 bucket for proposal attachments.
-[[r2_buckets]]
-binding = "ATTACHMENTS"
-bucket_name = "thecrux-attachments"
 
 [vars]
 APP_ENV = "production"
