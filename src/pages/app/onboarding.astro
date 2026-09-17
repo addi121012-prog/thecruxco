@@ -16,7 +16,7 @@ if (Astro.locals.workspace) return Astro.redirect('/app');
     const f = document.getElementById('f'), err = document.getElementById('err');
     f.addEventListener('submit', async (e) => {
       e.preventDefault(); err.textContent = ''; const btn = f.querySelector('button'); btn.disabled = true;
-      try { const d = await Crux.api('POST', '/api/workspace/create', { name: name.value }); location.href = d.redirect || '/app'; }
+      try { const d = await Crux.api('POST', '/api/workspace/create', { name: document.getElementById('name').value }); location.href = d.redirect || '/app'; }
       catch (ex) { err.textContent = ex.message; btn.disabled = false; }
     });
   </script>

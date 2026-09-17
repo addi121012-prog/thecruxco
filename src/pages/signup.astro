@@ -20,7 +20,7 @@ import Auth from '../layouts/Auth.astro';
     f.addEventListener('submit', async (ev) => {
       ev.preventDefault(); err.textContent = ''; const btn = f.querySelector('button'); btn.disabled = true;
       try {
-        const d = await Crux.api('POST', '/api/auth/signup', { name: name.value, email: email.value, password: password.value, invite });
+        const d = await Crux.api('POST', '/api/auth/signup', { name: document.getElementById('name').value, email: email.value, password: password.value, invite });
         location.href = d.redirect || '/app';
       } catch (ex) { err.textContent = ex.message; btn.disabled = false; }
     });
