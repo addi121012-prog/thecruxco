@@ -1,0 +1,10 @@
+---
+import type { Product } from '../config/career';
+interface Props { product: Product; }
+const { product } = Astro.props;
+---
+<article class="cx-prod">
+  <h3>{product.title}</h3>
+  <p>{product.blurb}</p>
+  <a class="btn-solid" href={product.url} rel="noopener">Get this book</a>
+</article>

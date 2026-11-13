@@ -1,0 +1,73 @@
+/* The Crux Career + new home. Uses the site tokens (--ink, --paper, --accent, --card, --rule, --muted). */
+:root { --hl: #FFD84A; --on-hl: #14130F; }
+
+.cx-mark {
+  background: linear-gradient(transparent 52%, var(--hl) 52%, var(--hl) 92%, transparent 92%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  padding: 0 0.08em;
+  color: inherit;
+  animation: cx-swipe 0.9s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+@keyframes cx-swipe { from { background-size: 0 100%; } to { background-size: 100% 100%; } }
+@media (prefers-reduced-motion: reduce) { .cx-mark { animation: none; } }
+
+.cx-eyebrow { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+/* hero */
+.cx-hero { padding: 64px 0 40px; }
+.cx-hero h1 { font-size: clamp(44px, 9vw, 96px); line-height: 1.02; letter-spacing: -0.03em; margin: 14px 0 0; font-weight: 800; text-wrap: balance; }
+.cx-lede { max-width: 58ch; margin: 22px 0 0; font-size: 19px; line-height: 1.55; color: var(--muted); }
+.cx-lede strong { color: var(--ink); }
+.cx-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 30px; }
+.cx-count { font-family: var(--sans); font-size: 14px; color: var(--muted); }
+.cx-count b { font-size: 20px; color: var(--ink); }
+
+/* section heads */
+.cx-sec { padding: 36px 0; }
+.cx-sec h2 { font-size: clamp(26px, 4vw, 36px); margin: 6px 0 8px; }
+.cx-sub { color: var(--muted); max-width: 60ch; margin: 0 0 24px; }
+
+/* brand family tiles */
+.cx-family { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.cx-tile { display: flex; flex-direction: column; gap: 10px; min-height: 190px; padding: 22px; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); text-decoration: none; color: var(--ink); }
+.cx-tile h3 { margin: 0; font-size: 22px; }
+.cx-tile p { margin: 0; flex: 1; font-size: 15px; color: var(--muted); line-height: 1.5; }
+.cx-tile--open { border: 2px solid var(--ink); }
+.cx-tile--open:hover { color: var(--ink); transform: translateY(-2px); }
+.cx-tile--soon { opacity: 0.8; }
+.cx-go { font-family: var(--sans); font-weight: 600; font-size: 14px; }
+.cx-pill { align-self: flex-start; font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); color: var(--muted); }
+.cx-pill--live { background: var(--hl); border-color: var(--hl); color: var(--on-hl); }
+
+/* career page */
+.cx-crumb { padding: 26px 0 0; font-family: var(--sans); font-size: 14px; }
+.cx-crumb a { color: var(--muted); text-decoration: none; }
+.cx-inside { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px 22px; margin-top: 8px; }
+.cx-inside div { border-left: 4px solid var(--hl); padding: 2px 0 2px 14px; }
+.cx-inside b { display: block; font-family: var(--sans); font-size: 16px; }
+.cx-inside span { font-size: 14.5px; color: var(--muted); line-height: 1.45; }
+
+.cx-class { padding: 40px 0 8px; border-top: 1px solid var(--rule); margin-top: 36px; }
+.cx-class h2 { font-size: clamp(30px, 5vw, 44px); margin: 0 0 4px; }
+.cx-class__meta { font-family: var(--sans); font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+.cx-group { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 30px 0 4px; }
+.cx-groupnote { margin: 0 0 14px; font-size: 15px; color: var(--muted); }
+.cx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.cx-prod { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); }
+.cx-prod h3 { margin: 0; font-size: 20px; }
+.cx-prod p { margin: 0; flex: 1; font-size: 14.5px; line-height: 1.45; color: var(--muted); }
+.cx-prod .btn-solid, .cx-prod .cx-off { text-align: center; margin-top: 6px; }
+.cx-off { display: block; padding: 10px 14px; border: 1px dashed var(--rule); border-radius: 3px; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+.cx-wide { grid-column: 1 / -1; }
+.cx-wide .cx-prod { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px; }
+.cx-wide .cx-prod > div { flex: 1 1 320px; }
+
+.cx-next { margin-top: 44px; padding: 18px 20px; border: 1px dashed var(--rule); border-radius: 6px; color: var(--muted); font-size: 15px; }
+.cx-fine { margin-top: 14px; font-family: var(--sans); font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { .cx-hero { padding-top: 40px; } .cx-lede { font-size: 17px; } }
+
+/* header + footer additions */
+.nav a.nav-soon { color: var(--muted); opacity: 0.65; pointer-events: none; cursor: default; }
+.nav a.nav-soon::after { content: "soon"; font-size: 10px; margin-left: 5px; padding: 1px 5px; border: 1px solid var(--rule); border-radius: 999px; }
+.nav a.nav-career { color: var(--ink); font-weight: 600; }
