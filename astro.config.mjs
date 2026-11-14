@@ -7,6 +7,11 @@ import cloudflare from '@astrojs/cloudflare';
 export default defineConfig({
   site: 'https://thecruxco.com',
   output: 'hybrid',
+  // Retired pages: send old links to the home page.
+  redirects: {
+    '/crm': '/',
+    '/pricing': '/',
+  },
   adapter: cloudflare({
     platformProxy: { enabled: true }, // exposes D1/R2 bindings to `astro dev`
     imageService: 'passthrough',
