@@ -11,7 +11,6 @@ import Auth from '../layouts/Auth.astro';
     <button class="btn btn--primary" style="width:100%" type="submit">Log in</button>
   </form>
   <div style="text-align:center;margin-top:12px"><a href="/forgot-password" class="muted" style="font-size:13px">Forgot your password?</a></div>
-  <div slot="foot" class="authfoot">New to The Crux? <a href="/signup">Start free →</a></div>
   <script slot="scripts" is:inline>
     const f = document.getElementById('f'), err = document.getElementById('err');
     const next = new URLSearchParams(location.search).get('next');
