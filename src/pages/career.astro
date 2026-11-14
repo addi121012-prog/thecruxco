@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { PRODUCTS } from '../config/career';
+import '../styles/career.css';
+
+const desc = 'The Crux Career: exam-ready study material, opening soon.';
+---
+<Base title="The Crux Career" description={desc}>
+  <div class="container-wide">
+    <div class="cx-crumb"><a href="/">← The Crux</a></div>
+
+    <section class="cx-hero" style="padding-bottom:24px">
+      <span class="cx-eyebrow">The Crux Career</span>
+      <h1>Revise the <span class="cx-mark">crux</span>, skip the clutter.</h1>
+      <p class="cx-lede">Study material built to be marked, folded and revised, not just read.</p>
+    </section>
+
+    {PRODUCTS.length > 0
+      ? (
+        <section class="cx-sec" style="padding-top:8px">
+          <div class="cx-grid">
+            {PRODUCTS.map((p) => <ProductCard product={p} />)}
+          </div>
+        </section>
+      )
+      : (
+        <section class="cx-sec" style="padding-top:8px">
+          <div class="cx-next" style="margin-top:0">Our first products are being finished. They will appear here as soon as they are ready.</div>
+        </section>
+      )}
+
+    <p class="cx-fine">Study material is independently created and is not affiliated with or endorsed by CBSE, NCERT or NTA.</p>
+  </div>
+</Base>
